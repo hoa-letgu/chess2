@@ -1,0 +1,41 @@
+.target {
+  position: relative;
+}
+
+.target::before,
+.target::after {
+  content: "";
+  position: absolute;
+  top: 18%;
+  left: 18%;
+  right: 18%;
+  bottom: 18%;
+  border-radius: 999px;
+  border: 3px solid rgba(255, 60, 60, 0.95);
+  box-shadow: 0 0 10px rgba(255, 60, 60, 0.75);
+  animation: pulse 0.55s ease-in-out infinite;
+}
+
+.target::after {
+  top: 34%;
+  left: 34%;
+  right: 34%;
+  bottom: 34%;
+  border-width: 2px;
+  opacity: 0.85;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+}
