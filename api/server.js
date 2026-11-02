@@ -3,6 +3,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import express from "express";
 import cors from "cors";
+import { installArena } from "./arena/server.js";
 
 import registerChessServer from "./games/chess.server.js";
 import registerXiangqiServer from "./games/xiangqi.server.js"; // 👈 THÊM DÒNG NÀY
@@ -12,6 +13,7 @@ const app = express();
 app.use(cors());
 
 const httpServer = createServer(app);
+installArena(app, httpServer);
 const io = new Server(httpServer, { cors: { origin: "*" } });
 
 io.on("connection", (socket) => {
@@ -23,6 +25,6 @@ io.on("connection", (socket) => {
   registerGomokuServer(io, socket);
 });
 
-httpServer.listen(3001, () => {
+httpServer.listen(Number(process.env.PORT) || 3001, () => {
   console.log("Server chạy tại http://localhost:3001");
 });

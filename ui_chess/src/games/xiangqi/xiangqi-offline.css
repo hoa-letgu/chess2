@@ -1,0 +1,44 @@
+.xq-offline-page{position:relative;isolation:isolate;min-height:100vh;min-height:100dvh;background:#142e29;color:#e5e9e6}
+.xq-offline-page::before{content:'';position:fixed;inset:0;z-index:-2;background:url('/xiangqi/bamboo-landscape.png') center center/cover no-repeat;pointer-events:none}
+.xq-offline-page::after{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(90deg,#071c1729,#06171366 33%,#06171366 67%,#071c1729),linear-gradient(180deg,#06171355,transparent 28%,#06171322 75%,#06171388);pointer-events:none}
+.xq-offline-page .xq-offline-mode{width:fit-content;margin:0 auto;padding:6px 15px;border:1px solid #d4c19140;border-radius:20px;background:#112820c9;color:#e7d5ad;box-shadow:0 3px 15px #00181030;backdrop-filter:blur(8px)}
+.xq-offline-page .imperial-heading{padding:12px 14px 17px;border-radius:8px 8px 0 0;background:linear-gradient(90deg,#0e261edf,#0e261e99 78%,#0e261e55);text-shadow:0 1px 3px #0008}
+.xq-offline-page .imperial-board-caption{color:#e1cda1;text-shadow:0 1px 4px #001a12,0 1px 8px #001a12}
+.xq-offline-page .xq-offline-status{background:#10291fe8;border-color:#c7b07955;backdrop-filter:blur(10px)}
+.xq-offline-page .xq-offline-actions button{background:#142f26ed;border-color:#af9b6b70}
+.xiangqi-offline{width:100%;max-width:790px;margin:0 auto;padding:32px 24px 28px;color:#e5e9e6;font:14px/1.6 'Segoe UI',sans-serif;box-sizing:border-box}.xiangqi-offline *{box-sizing:border-box}.xiangqi-offline .imperial-table{margin-top:20px}.xq-offline-mode{text-align:center;font-size:11px;letter-spacing:1px;color:#b9a079}.xq-offline-status{text-align:center;padding:13px 16px;margin-top:18px;background:#151f23;border:1px solid #b08b5038;border-radius:8px;color:#e5cc9d;font-size:13px}.xq-offline-actions{display:flex;justify-content:center;gap:12px;margin:16px 0}.xq-offline-actions button{cursor:pointer;background:#293739;border:1px solid #4b5957;border-radius:8px;padding:9px 17px;color:#e8eee8;font-size:12px}.xq-offline-actions button:hover:not(:disabled){background:#3b4947}.xq-offline-actions button:disabled{opacity:.4;cursor:default}.xq-offline-actions button:focus-visible{outline:2px solid #dfc083;outline-offset:3px}@media(max-width:600px){.xiangqi-offline{padding:68px 14px 75px}.xq-offline-status{font-size:11px;padding:11px 8px}}
+
+@media(min-width:900px){.xq-offline-page::before{background-size:100% 100%}}
+
+/* Allocate the board the space left after controls, then fit its full 9:10 grid. */
+.xiangqi-offline{height:100vh;height:100dvh;min-height:320px;max-width:790px;padding:12px 16px;display:flex;flex-direction:column;gap:8px;overflow:visible}
+.xq-offline-page .xq-offline-mode{flex:0 0 auto;align-self:flex-end;margin:4px 0 0 auto;max-width:calc(100% - 120px);height:32px;display:flex;align-items:center;justify-content:center;padding:5px 10px;font-size:10px;letter-spacing:.3px;white-space:nowrap}
+.xq-board-viewport{flex:1 1 0;min-height:0;min-width:0;width:100%;container-type:size;display:flex;align-items:center;justify-content:center}
+.xiangqi-offline .imperial-table{flex:none;width:min(100cqw,calc((100cqh - 68px)*.9),730px);max-width:100%;margin:0}
+.xq-offline-page .imperial-heading{height:48px;min-height:48px;gap:10px;padding:6px 10px;overflow:hidden}
+.xq-offline-page .imperial-heading>div{min-width:0}
+.xq-offline-page .imperial-heading p{font-size:10px;letter-spacing:1.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xq-offline-page .imperial-heading div>span{font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xq-offline-page .imperial-seal{width:28px;height:30px;font-size:22px}
+.xq-offline-page .imperial-board-size{font-size:8px;letter-spacing:1px}
+.xq-offline-page .imperial-frame{padding:clamp(10px,1.4cqw,18px)}
+.xq-offline-page .imperial-board-caption{height:20px;padding:3px 0 0;font-size:8px;gap:9px;letter-spacing:.3px}
+.xq-offline-page .xq-offline-status{flex:0 0 auto;margin:0;padding:8px 12px;font-size:12px;line-height:1.5;min-height:34px;text-align:center}
+.xq-offline-actions{flex:0 0 auto;margin:0;gap:10px}
+.xq-offline-actions button{padding:7px 14px;min-height:32px;font-size:11px}
+@media(max-width:600px){
+ .xiangqi-offline{padding:12px 10px max(10px,env(safe-area-inset-bottom));gap:7px}
+ .xq-offline-page .xq-offline-mode{font-size:9px;padding:5px 7px}
+ .xq-offline-page .imperial-heading p{font-size:9px;letter-spacing:.7px}
+ .xq-offline-page .imperial-heading div>span{font-size:7px}
+ .xq-offline-page .xq-offline-status{font-size:11px}
+}
+@media(max-height:550px) and (min-aspect-ratio:6/5){
+ .xiangqi-offline{max-width:100%;display:grid;grid-template-columns:160px minmax(0,1fr);grid-template-rows:76px minmax(0,1fr) auto;gap:10px 16px;padding:10px 16px}
+ .xq-board-viewport{grid-column:2;grid-row:1/4;height:100%}
+ .xq-offline-page .xq-offline-mode{grid-column:1;grid-row:1;align-self:end;max-width:100%;width:100%;margin:0;font-size:9px}
+ .xq-offline-page .xq-offline-status{grid-column:1;grid-row:2;align-self:center;font-size:11px;padding:10px}
+ .xq-offline-actions{grid-column:1;grid-row:3;flex-wrap:wrap;gap:6px}
+ .xq-offline-actions button{padding:7px 10px;font-size:10px}
+}
+@supports not (height:1cqh){.xiangqi-offline .imperial-table{width:min(100%,calc((100vh - 190px)*.9))}}

@@ -1,5 +1,7 @@
+import { MatchHeader } from '@/features/arena/MatchSurface';
 //src\games\xiangqi\XiangqiGame.tsx
 import React, { useState, useEffect } from "react";
+import "./xiangqi-offline.css";
 import { XiangqiBoard } from "./components/XiangqiBoard";
 import { useXiangqiMove } from "./hooks/useXiangqiMove";
 import { useXiangqiBot } from "./hooks/useXiangqiBot";
@@ -475,14 +477,15 @@ const clearDrawToast = () => {
   // RENDER UI
   // ============================================
   return (
-   <>
-    <div className="mx-auto w-full max-w-2xl">
-<div className="text-center text-slate-400 text-sm mb-1">
+   <div className="xq-offline-page">
+    <div className="xiangqi-offline">
+<MatchHeader className="xq-offline-mode" mode={mode === "online" ? "online" : "offline"}>
   Chế độ: {mode === "bot" ? "🤖 Đánh với BOT" : "🌍 Online"}
-</div>
+</MatchHeader>
 
       
 
+    <div className="xq-board-viewport">
     <XiangqiBoard
 	  board={board}
 	  viewSide={viewSide}
@@ -490,7 +493,7 @@ const clearDrawToast = () => {
 	  legalTargets={legalTargets}
 	  lastMove={lastMove}
 	  onClick={
-		gameOver
+		(gameOver || showSettings || movingPiece)
 		  ? undefined                       // ⛔ khóa bàn cờ khi kết thúc
 		  : mode === "bot"
 			? turn !== botSide
@@ -507,11 +510,12 @@ const clearDrawToast = () => {
 	  }
 	  hideSquare={hideSquare}
 	/>
+    </div>
 
 
 
 
-      <div className="text-center mt-3 text-white">
+      <div className="xq-offline-status" role="status">
         Lượt hiện tại: {turn === "red" ? "ĐỎ" : "ĐEN"}
         {mode === "bot" && turn === botSide && botThinking && " – BOT đang tính…"}
       </div>
@@ -525,12 +529,12 @@ const clearDrawToast = () => {
       )}
 
      {mode === "bot" && (
-	  <div className="flex justify-center gap-3 my-3">
-		<button className="px-3 py-1 bg-gray-700 rounded" onClick={handleUndo}>
-		  Undo
+	  <div className="xq-offline-actions">
+		<button disabled={Boolean(movingPiece) || botThinking || historyIndex === 0} onClick={handleUndo}>
+		  Lùi nước
 		</button>
-		<button className="px-3 py-1 bg-gray-700 rounded" onClick={handleRedo}>
-		  Redo
+		<button disabled={Boolean(movingPiece) || botThinking || historyIndex >= history.length - 1} onClick={handleRedo}>
+		  Đi lại
 		</button>
 	  </div>
 	)}
@@ -606,6 +610,6 @@ const clearDrawToast = () => {
       />
 
       <PopupModal popup={popup} setPopup={setPopup} />
-	 </>
+	 </div>
   );
 }

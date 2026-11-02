@@ -1,3 +1,4 @@
+import { MatchHeader, MatchPlayers } from '@/features/arena/MatchSurface';
 // src/games/gomoku/GomokuGame.tsx
 import React, { useState, useEffect } from "react";
 import { GomokuBoard } from "./components/GomokuBoard";
@@ -19,7 +20,7 @@ function createBoard(): Cell[][] {
 }
 
 /* ================= COMPONENT ================= */
-export default function GomokuGame() {
+export default function GomokuGame({onExit}:{onExit:()=>void}) {
   const socket = useSocket();
 
   /* ===== GAME STATE ===== */
@@ -34,8 +35,8 @@ export default function GomokuGame() {
   const [roomReady, setRoomReady] = useState(false);
 
   /* ===== MODE ===== */
-  const [mode, setMode] = useState<"bot" | "online" | null>(null);
-  const [showSettings, setShowSettings] = useState(true);
+  const [mode, setMode] = useState<"bot" | "online" | null>("bot");
+  const [showSettings, setShowSettings] = useState(false);
 
   /* ===== ROOM UI ===== */
   const [newRoomName, setNewRoomName] = useState("");
@@ -136,7 +137,7 @@ export default function GomokuGame() {
 
   /* ================= UI ================= */
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-4">
+    <><MatchHeader mode={mode === "online" ? "online" : "offline"}><button onClick={onExit}>← Sảnh game</button><strong>BOARD ARENA · CỜ CARO</strong><button onClick={() => setShowSettings(true)}>Cài đặt</button></MatchHeader><main className="offline-legacy-page"><section className="offline-match-panel">
       <h1 className="text-xl font-bold mb-2">
         Cờ Caro –{" "}
         {winner
@@ -146,18 +147,20 @@ export default function GomokuGame() {
           : `Lượt: ${turn}`}
       </h1>
 
+      <MatchPlayers turn={turn === "X" ? 0 : 1} players={[{name:"Quân X",detail:mode === "bot" ? "Bạn" : "Người chơi X"},{name:"Quân O",detail:mode === "bot" ? "Đối thủ máy" : "Người chơi O"}]} />
       <GomokuBoard
         board={board}
         onMove={handleMove}
         winnerLine={winnerLine}
+        canMove={!showSettings && !winner && (mode === "bot" ? turn === "X" : mode === "online" && roomReady && seat === turn)}
       />
 
       {/* ===== RESET ===== */}
       <button
         onClick={resetGame}
-        className="mt-4 px-4 py-2 bg-slate-700 rounded"
+        className="legacy-reset"
       >
-        🔄 Reset
+        Ván mới
       </button>
 	  {mode === "online" && (
 		  <button
@@ -186,6 +189,6 @@ export default function GomokuGame() {
 
       {/* ===== POPUP ===== */}
       <PopupModal popup={popup} setPopup={setPopup} />
-    </div>
+    </section></main></>
   );
 }

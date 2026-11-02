@@ -1,0 +1,180 @@
+.imperial-table {
+  width: 100%;
+  max-width: 730px;
+  margin: 25px auto 12px;
+  color: #e6c18a;
+}
+.imperial-heading {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 0 4px 17px;
+}
+.imperial-seal {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 44px;
+  flex: 0 0 auto;
+  color: #f4dbac;
+  border: 1px solid #c77950;
+  outline: 1px solid #8e342b;
+  outline-offset: 3px;
+  border-radius: 2px;
+  background: linear-gradient(135deg, #a04130, #5c1e1b);
+  font: 700 26px/1 "KaiTi", "STKaiti", serif;
+  box-shadow: 0 4px 12px #0004;
+}
+.imperial-heading p { margin: 0; color: #e4bf84; font-size: 12px; font-weight: 650; letter-spacing: 2.6px; }
+.imperial-heading div > span { display: block; font-size: 10px; letter-spacing: .4px; color: #aa9b85; margin-top: 4px; }
+.imperial-board-size { margin-left: auto; color: #9d886a; font-size: 10px; letter-spacing: 2px; white-space: nowrap; }
+.imperial-frame {
+  position: relative;
+  padding: clamp(13px, 2.1vw, 25px);
+  border: 1px solid #b08b50;
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(2deg, transparent 0 6px, #ce934f08 7px 8px, transparent 9px 15px),
+    linear-gradient(120deg, #49271e, #281a16 44%, #4b2c20 75%, #241613);
+  box-shadow: inset 0 0 0 3px #231610, inset 0 0 0 5px #937046, inset 0 0 0 7px #382317, 0 16px 38px #0006, 0 3px 0 #090c0b;
+}
+.imperial-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-top: 3px double #d0a966;
+  border-left: 3px double #d0a966;
+  z-index: 4;
+  pointer-events: none;
+}
+.imperial-corner::after { content: ""; position: absolute; inset: 3px; border-top: 1px solid #bc9052; border-left: 1px solid #bc9052; }
+.corner-nw { left: 7px; top: 7px; }
+.corner-ne { right: 7px; top: 7px; transform: rotate(90deg); }
+.corner-se { right: 7px; bottom: 7px; transform: rotate(180deg); }
+.corner-sw { left: 7px; bottom: 7px; transform: rotate(270deg); }
+.imperial-board-stage {
+  position: relative;
+  display: grid;
+  width: 100%;
+  gap: 0;
+  isolation: isolate;
+  background:
+    repeating-linear-gradient(0deg, #9e754908 0 1px, transparent 1px 6px),
+    radial-gradient(ellipse at 40% 35%, #f1dfb6, #e0c28e 75%, #ccaa75);
+  box-shadow: 0 0 0 1px #cea66b, 0 0 0 3px #140c08, inset 0 0 25px #663f2433;
+  container-type: inline-size;
+}
+.imperial-board-lines { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+.imperial-grid-lines { stroke: #745332; stroke-width: 1.8; fill: none; }
+.imperial-grid-outline { stroke-width: 3; }
+.imperial-go .imperial-grid-lines, .imperial-gomoku .imperial-grid-lines { stroke-width: 2.1; }
+.imperial-stars { fill: #543b25; }
+.imperial-river { fill: #775332; text-anchor: middle; font: 42px "KaiTi", "STKaiti", "Microsoft YaHei", serif; letter-spacing: 9px; }
+.imperial-river path { fill: none; stroke: #a4814e; stroke-width: 1; }
+
+/* Explicit grid rows and absolutely sized pieces prevent empty spans collapsing. */
+.imperial-table .imperial-cell {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #272922;
+  line-height: 1;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.imperial-table .imperial-cell:disabled { opacity: 1; cursor: default; }
+.imperial-table .imperial-cell:hover:not(:disabled) { filter: none; background: #8c372414; }
+.imperial-table .imperial-cell:focus-visible { outline: 2px solid #9e3529; outline-offset: -3px; z-index: 5; }
+.imperial-cell.cell-selected::after, .imperial-cell.cell-origin::after {
+  content: "";
+  position: absolute;
+  inset: 5%;
+  border: 2px solid #aa3425;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.imperial-cell.cell-selected::after { box-shadow: 0 0 0 2px #eccc86, 0 0 13px #c88d4d; }
+.imperial-cell.cell-origin::after { inset: 34%; opacity: .55; border-width: 1px; }
+.imperial-move-mark {
+  position: absolute;
+  z-index: 4;
+  width: 15%;
+  height: 15%;
+  min-width: 4px;
+  min-height: 4px;
+  left: 42.5%;
+  top: 42.5%;
+  border: 1px solid #fff2cf;
+  border-radius: 50%;
+  background: #c34c31;
+  box-shadow: 0 0 0 1px #8e321f;
+  pointer-events: none;
+}
+.imperial-xiangqi .imperial-move-mark { left: 72%; top: 73%; width: 12%; height: 12%; }
+.imperial-chess .imperial-move-mark { left: 78%; top: 78%; width: 10%; height: 10%; }
+
+.imperial-xiangqi-piece {
+  position: absolute;
+  left: 7%;
+  top: 7%;
+  width: 86%;
+  height: 86%;
+  display: grid;
+  place-items: center;
+  border: 2px solid #886333;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 22%, #fff1cf, #e6c386 68%, #ac7b3c);
+  box-shadow: inset 0 2px 2px #fff9, inset 0 -3px 3px #83532255, 0 3px 0 #8a5d2d, 1px 5px 6px #36230f66;
+  font: 900 clamp(20px, 5.4cqw, 46px)/1 "KaiTi", "STKaiti", "Microsoft YaHei", serif;
+  text-shadow: 0 1px 0 #fff8;
+  pointer-events: none;
+  user-select: none;
+  z-index: 2;
+}
+.imperial-xiangqi-piece::after { content: ""; position: absolute; inset: 5%; border: 1px solid currentColor; border-radius: 50%; opacity: .6; }
+.imperial-xiangqi-piece > span { transform: translateY(-1%); }
+.army-red { color: #a32720; }
+.army-black { color: #202a28; }
+.imperial-stone {
+  position: absolute;
+  left: 5%;
+  top: 5%;
+  width: 90%;
+  height: 90%;
+  border-radius: 50%;
+  z-index: 2;
+  pointer-events: none;
+  box-shadow: 1px 3px 4px #2c1b1277, inset 0 -2px 3px #0004;
+}
+.imperial-stone.stone-black { background: radial-gradient(circle at 32% 25%, #737779 0%, #303739 29%, #121718 66%, #080c0d 100%); border: 1px solid #0b0e10; }
+.imperial-stone.stone-white { background: radial-gradient(circle at 32% 25%, #fffefa, #f0ece0 45%, #c9c6bd 80%, #a39f94); border: 1px solid #bcb7a7; }
+.imperial-gomoku-piece { position: absolute; inset: 6%; display: grid; place-items: center; font: 800 clamp(13px, 4cqw, 32px)/1 "Segoe UI", sans-serif; pointer-events: none; text-shadow: 0 1px #fff8; }
+.imperial-chess-piece { position: absolute; inset: 8%; width: 84%; height: 84%; object-fit: contain; pointer-events: none; user-select: none; }
+.imperial-table.imperial-chess .imperial-cell { background: #e6d8b5; }
+.imperial-table.imperial-chess .imperial-cell.cell-dark { background: #748a74; }
+.imperial-board-caption { display: flex; align-items: center; justify-content: center; gap: 15px; padding-top: 15px; font-size: 10px; letter-spacing: 1px; color: #b69a6b; }
+.imperial-board-caption > span:first-child, .imperial-board-caption > span:last-child { font-size: 6px; color: #95683d; }
+@media (max-width: 700px) {
+  .imperial-table { margin-top: 19px; }
+  .imperial-heading { gap: 10px; padding-bottom: 14px; }
+  .imperial-heading p { font-size: 10px; letter-spacing: 1.7px; }
+  .imperial-heading div > span { font-size: 9px; letter-spacing: 0; }
+  .imperial-seal { width: 31px; height: 35px; font-size: 23px; }
+  .imperial-frame { padding: 12px; }
+  .imperial-corner { width: 17px; height: 17px; }
+  .imperial-xiangqi-piece { border-width: 1px; box-shadow: inset 0 1px 1px #fff9, inset 0 -2px 2px #83532255, 0 2px 0 #8a5d2d, 1px 3px 4px #36230f66; font-size: 5.4cqw; }
+  .imperial-board-caption { font-size: 9px; letter-spacing: .4px; }
+}
+
+.imperial-legal-mark { position: absolute; inset: 38%; border-radius: 50%; background: #537854b3; border: 1px solid #edf0b8; box-shadow: 0 0 0 2px #34513e55; pointer-events: none; z-index: 3; }
+.imperial-legal-mark.capture-target { inset: 4%; border: 3px solid #557a42; background: transparent; box-shadow: 0 0 0 1px #fff0bd; }
+.imperial-moving-cell { position: absolute; transform: translate(-50%, -50%); transition: left 180ms linear, top 180ms linear; z-index: 8; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .imperial-moving-cell { transition: none; } }

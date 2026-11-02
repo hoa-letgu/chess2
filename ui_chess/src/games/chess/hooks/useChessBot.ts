@@ -152,11 +152,11 @@ export function useChessBot({
 
 
 		const result = findBestMoveTS(clone, {
-			  maxDepth: depth,
-			  preferDepth: 6,
-			  timeLimitMs,
-			  cache: cacheRef.current,
-			});
+		  maxDepth: 6,
+		  timeLimitMs: 1000,
+		  cache: cacheRef.current,
+		});
+
 
 
 

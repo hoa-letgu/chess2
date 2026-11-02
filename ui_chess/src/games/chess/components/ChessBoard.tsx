@@ -1,9 +1,8 @@
+import { BoardSurface } from '@/features/arena/MatchSurface';
 // src/games/chess/components/ChessBoard.tsx
 import type { CSSProperties } from "react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { PIECE_IMG, isPieceKey, type PieceKey } from "@/games/chess/utils/pieces";
-
-
 
 type LastMove = {
   from: string;
@@ -15,13 +14,25 @@ type LastMove = {
 
 type MovingPiece = {
   piece: string; // "P","p","R","r",...
-  from: string;  // "e2"
-  to: string;    // "e4"
+  from: string; // "e2"
+  to: string; // "e4"
 };
 
 type CapturedPiece = {
   square: string;
   piece: string;
+};
+
+// ========================
+// ✅ SETUP (drag-drop)
+// ========================
+type SetupPiece = PieceKey | null;
+
+export type SetupDrag = {
+  piece: PieceKey;
+  from?: { r: number; c: number } | null; // null = kéo từ palette, có giá trị = kéo từ bàn
+  clientX: number;
+  clientY: number;
 };
 
 type Props = {
@@ -40,13 +51,23 @@ type Props = {
   viewColor: "w" | "b";
   pieceTheme: "classic" | "neo" | "wood";
   onClick: (square: string) => void;
+
+  // ✅ Setup props (kéo-thả)
+  setupMode?: boolean;
+  setupBoard?: SetupPiece[][];
+  onSetupChange?: (b: SetupPiece[][]) => void;
+
+  setupDrag?: SetupDrag | null;
+  setSetupDrag?: (d: SetupDrag | null) => void;
+
+  // ✅ optional: click-place / eraser
+  setupPick?: SetupPiece; // null = eraser
 };
 
-const MOVE_MS = 450;                 // ✅ tăng lên cho “lụa” hơn (220 -> 280)
-const PIECE_SCALE = 0.8;             // giống quân tĩnh (80%)
-const PIECE_INSET = (1 - PIECE_SCALE) / 2; // 0.10 = 10%
-//const PIECE_IMG = PIECE_IMG_THEMES[pieceTheme];
-// ✅ easing giống kiểu chess.com (mềm đầu + mềm cuối)
+const MOVE_MS = 450;
+const PIECE_SCALE = 0.8;
+const PIECE_INSET = (1 - PIECE_SCALE) / 2;
+
 const easeInOutCubic = (t: number) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
@@ -67,6 +88,14 @@ export function ChessBoard({
   viewColor,
   pieceTheme,
   onClick,
+
+  // setup
+  setupMode = false,
+  setupBoard,
+  onSetupChange,
+  setupDrag,
+  setSetupDrag,
+  setupPick,
 }: Props) {
   const isWhiteView = viewColor === "w";
   const squares: JSX.Element[] = [];
@@ -96,8 +125,8 @@ export function ChessBoard({
   // ================================
   const squareToPx = (sq: string) => {
     const files = "abcdefgh";
-    const fileIndex = files.indexOf(sq[0]); // 0..7
-    const rankNum = Number(sq[1]);          // 1..8
+    const fileIndex = files.indexOf(sq[0]);
+    const rankNum = Number(sq[1]);
 
     if (isWhiteView) {
       return { x: fileIndex * squarePx, y: (8 - rankNum) * squarePx };
@@ -158,7 +187,6 @@ export function ChessBoard({
       }
     };
 
-    // start immediately
     setAnimPos({ x: sx, y: sy, key });
     rafRef.current = requestAnimationFrame(tick);
 
@@ -168,6 +196,76 @@ export function ChessBoard({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [movingPiece?.from, movingPiece?.to, movingPiece?.piece, squarePx, isWhiteView]);
+
+  // ================================
+  // ✅ SETUP: drag move/up
+  // ================================
+  useEffect(() => {
+    if (!setupMode) return;
+    if (!setupDrag || !setSetupDrag) return;
+
+    const onMove = (ev: PointerEvent) => {
+      setSetupDrag({
+        ...setupDrag,
+        clientX: ev.clientX,
+        clientY: ev.clientY,
+      });
+    };
+
+    const onUp = (ev: PointerEvent) => {
+      // thiếu board/setup callback -> hủy
+      if (!setupBoard || !onSetupChange) {
+        setSetupDrag(null);
+        return;
+      }
+
+      const rect = boardRef.current?.getBoundingClientRect();
+      if (!rect) {
+        setSetupDrag(null);
+        return;
+      }
+
+      const x = ev.clientX - rect.left;
+      const y = ev.clientY - rect.top;
+
+      const file = Math.floor(x / squarePx);
+      const rank = Math.floor(y / squarePx);
+
+      // thả ngoài bàn => nếu kéo từ bàn thì xoá quân
+      if (file < 0 || file > 7 || rank < 0 || rank > 7) {
+        if (setupDrag.from) {
+          const nb = setupBoard.map((row) => row.slice());
+          nb[setupDrag.from.r][setupDrag.from.c] = null;
+          onSetupChange(nb);
+        }
+        setSetupDrag(null);
+        return;
+      }
+
+      const targetR = isWhiteView ? rank : 7 - rank;
+      const targetC = isWhiteView ? file : 7 - file;
+
+      const nb = setupBoard.map((row) => row.slice());
+
+      // nếu kéo từ bàn thì clear vị trí cũ
+      if (setupDrag.from) nb[setupDrag.from.r][setupDrag.from.c] = null;
+
+      // đặt vào ô mới (kéo từ palette cũng vào đây)
+      nb[targetR][targetC] = setupDrag.piece;
+
+      onSetupChange(nb);
+      setSetupDrag(null);
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setupMode, setupDrag, squarePx, isWhiteView, setupBoard, onSetupChange, setSetupDrag]);
 
   // ================================
   // RENDER BOARD
@@ -181,9 +279,14 @@ export function ChessBoard({
       const rank = 8 - r;
       const square = `${file}${rank}`;
 
-      const piece = board[r][c];
+      // ✅ piece source
+      const setupCell: SetupPiece | null = setupMode ? (setupBoard?.[r]?.[c] ?? null) : null;
+      const piece = setupMode ? null : board[r][c];
+
       const pieceKey =
-        piece && piece.color === "w"
+        setupMode
+          ? setupCell
+          : piece && piece.color === "w"
           ? piece.type.toUpperCase()
           : piece && piece.color === "b"
           ? piece.type
@@ -209,14 +312,60 @@ export function ChessBoard({
         style.boxShadow = "inset 0 0 12px 4px rgba(255,0,0,0.7)";
       }
 
-      // ẩn quân ở ô from khi đang bay
+      // ✅ ẩn quân ở ô from khi đang bay hoặc khi đang kéo setup từ chính ô đó
       const hideStaticPiece =
-        hidePiece === square || (movingPiece && movingPiece.from === square);
+        hidePiece === square ||
+        (movingPiece && movingPiece.from === square) ||
+        (setupMode &&
+          setupDrag?.from &&
+          setupDrag.from.r === r &&
+          setupDrag.from.c === c);
 
       squares.push(
         <button
           key={square}
-          onClick={() => onClick(square)}
+          aria-label={`${square}, ${pieceKey ?? "trống"}`}
+          aria-pressed={isSelected}
+          onClick={() => {
+            if (!setupMode) onClick(square);
+          }}
+          onPointerDown={(e) => {
+            if (!setupMode) return;
+
+            // nếu đang kéo setup khác -> bỏ
+            if (setupDrag) return;
+
+            // click-place / eraser (tuỳ bạn dùng hay không)
+            if (setupPick === null) {
+              if (!setupBoard || !onSetupChange) return;
+              const nb = setupBoard.map((row) => row.slice());
+              nb[r][c] = null;
+              onSetupChange(nb);
+              return;
+            }
+
+            // click place nếu có setupPick và ô đang trống
+            if (setupPick && !setupCell) {
+              if (!setupBoard || !onSetupChange) return;
+              const nb = setupBoard.map((row) => row.slice());
+              nb[r][c] = setupPick;
+              onSetupChange(nb);
+              return;
+            }
+
+            // drag từ bàn
+            if (!setupCell || !setSetupDrag) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            setSetupDrag({
+              piece: setupCell,
+              from: { r, c },
+              clientX: e.clientX,
+              clientY: e.clientY,
+            });
+          }}
           style={{
             position: "absolute",
             width: "12.5%",
@@ -229,6 +378,7 @@ export function ChessBoard({
             backgroundColor: "transparent",
             border: "none",
             padding: 0,
+            touchAction: "none", // ✅ rất quan trọng để pointer drag mượt trên mobile
             ...style,
           }}
         >
@@ -241,6 +391,7 @@ export function ChessBoard({
                 pointerEvents: "none",
                 ...(isDeadKing ? { transform: "rotate(90deg)", opacity: 0.9 } : {}),
               }}
+              draggable={false}
             />
           )}
         </button>
@@ -277,6 +428,7 @@ export function ChessBoard({
           backfaceVisibility: "hidden",
           transformStyle: "preserve-3d",
         }}
+        draggable={false}
       />
     );
   };
@@ -309,17 +461,54 @@ export function ChessBoard({
           pointerEvents: "none",
           zIndex: 150,
         }}
+        draggable={false}
+      />
+    );
+  };
+
+  // ================================
+  // ✅ SETUP floating piece
+  // ================================
+  const renderSetupFloating = () => {
+    if (!setupMode) return null;
+    if (!setupDrag) return null;
+
+    const rect = boardRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+
+    const localX = setupDrag.clientX - rect.left;
+    const localY = setupDrag.clientY - rect.top;
+
+    const sizePx = squarePx * PIECE_SCALE;
+
+    return (
+      <img
+        src={PIECE_IMG[setupDrag.piece]}
+        style={{
+          position: "absolute",
+          width: `${sizePx}px`,
+          height: `${sizePx}px`,
+          left: 0,
+          top: 0,
+          transform: `translate3d(${localX - sizePx / 2}px, ${localY - sizePx / 2}px, 0)`,
+          pointerEvents: "none",
+          zIndex: 999,
+          filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.35))",
+          willChange: "transform",
+        }}
+        draggable={false}
       />
     );
   };
 
   return (
-    <div
+    <BoardSurface className="offline-chess-frame"><div
       ref={boardRef}
-      className="relative w-full max-w-[480px] aspect-square mx-auto border rounded-lg overflow-hidden shadow"
+      className="chess-board-canvas relative w-full aspect-square mx-auto overflow-hidden"
       style={{
-        backgroundImage: "url('/chess/board.png')",
-        backgroundSize: "cover",
+        backgroundImage: "repeating-conic-gradient(from 90deg, #e6d8b5 0% 25%, #748a74 0% 50%)",
+        backgroundSize: "25% 25%",
+        
         backgroundPosition: "center",
         userSelect: "none",
       }}
@@ -338,13 +527,18 @@ export function ChessBoard({
             100% { box-shadow: inset 0 0 0px 0px rgba(255,0,0,0.2); }
           }
 
-          button:focus { outline: none; }
+          .chess-board-canvas button:focus-visible { outline: 2px solid #dfc083; outline-offset: -2px; }
         `}
       </style>
 
       {squares}
+
+      {/* bình thường */}
       {renderMovingPiece()}
       {renderCaptured()}
-    </div>
+
+      {/* setup drag */}
+      {renderSetupFloating()}
+    </div></BoardSurface>
   );
 }

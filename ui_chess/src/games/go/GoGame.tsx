@@ -1,3 +1,4 @@
+import { MatchHeader, MatchPlayers } from '@/features/arena/MatchSurface';
 import React, { useEffect, useState } from "react";
 import type { Stone } from "./utils/rules";
 import {
@@ -18,8 +19,8 @@ export default function GoGame({ onExit }: { onExit: () => void }) {
   const socket = useSocket();
 
   // ================= MODE =================
-  const [mode, setMode] = useState<"bot" | "online" | null>(null);
-  const [showSettings, setShowSettings] = useState(true);
+  const [mode, setMode] = useState<"bot" | "online" | null>("bot");
+  const [showSettings, setShowSettings] = useState(false);
 
   // ================= GAME STATE =================
   const [state, setState] = useState<GoState>(() =>
@@ -132,7 +133,7 @@ export default function GoGame({ onExit }: { onExit: () => void }) {
 
   // ================= RENDER =================
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-4">
+    <><MatchHeader mode={mode === "online" ? "online" : "offline"}><button onClick={onExit}>← Sảnh game</button><strong>BOARD ARENA · CỜ VÂY</strong><button onClick={() => setShowSettings(true)}>Cài đặt</button></MatchHeader><main className="offline-legacy-page"><section className="offline-match-panel">
       <h1 className="text-xl font-bold mb-2">
         Cờ Vây –{" "}
         {mode === "bot"
@@ -143,24 +144,26 @@ export default function GoGame({ onExit }: { onExit: () => void }) {
         – {turn === "black" ? "⚫ Đen" : "⚪ Trắng"}
       </h1>
 
+      <MatchPlayers turn={turn === "black" ? 0 : 1} players={[{name:"Quân đen", detail: mode === "bot" ? "Bạn" : "Người chơi đen"},{name:"Quân trắng",detail:mode === "bot" ? "Đối thủ máy" : "Người chơi trắng"}]} />
       <GoBoard
         board={board}
+        canMove={!showSettings && (mode === "bot" ? turn === "black" : mode === "online" && turn === playerColor)}
         onClick={mode === "online" ? handleOnlineMove : handleLocalMove}
       />
 
-      <div className="flex gap-3 mt-4">
+      <div className="legacy-actions">
         <button
           onClick={resetGame}
           className="px-4 py-2 bg-slate-700 rounded"
         >
-          🔄 Reset
+          Ván mới
         </button>
 
         <button
           onClick={onExit}
           className="px-4 py-2 bg-slate-700 rounded"
         >
-          ◀ Thoát
+          Về sảnh
         </button>
       </div>
 
@@ -182,6 +185,6 @@ export default function GoGame({ onExit }: { onExit: () => void }) {
 
       {/* ============ POPUP ============ */}
       <PopupModal popup={popup} setPopup={setPopup} />
-    </div>
+    </section></main></>
   );
 }

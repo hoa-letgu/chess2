@@ -42,9 +42,9 @@ export function createEngineCache(): EngineCache {
 const INF = 1_000_000_000;
 const MATE = 10_000_000;
 
-// Map overhead rất lớn, 1<<20 có thể nặng RAM.
-// Nếu chạy browser yếu, giảm xuống 1<<19 hoặc 1<<18.
-const MAX_TT_SIZE = 1 << 20;
+// Browser yếu: giảm TT để nhẹ RAM/GC (khuyến nghị 1<<19 hoặc 1<<18)
+// const MAX_TT_SIZE = 1 << 20;
+const MAX_TT_SIZE = 1 << 19;
 
 // mỗi bao nhiêu nodes thì check time 1 lần (2^11 = 2048)
 const TIME_CHECK_MASK = 2047;
@@ -52,6 +52,13 @@ const TIME_CHECK_MASK = 2047;
 // Zobrist fen-key cache size (giúp giảm CPU)
 const FEN_KEY_CACHE_MAX = 50_000;
 
+// Quiescence depth cap (CPU yếu)
+const QS_MAX_PLIES = 6;
+
+// Check extension (nhẹ)
+const CHECK_EXTENSION = 1;
+
+// piece values
 const PIECE_VALUES: Record<string, number> = {
   p: 100,
   n: 320,
@@ -69,7 +76,7 @@ const TT_UPPER = 2;
 type TTEntry = {
   key: bigint;
   depth: number;
-  score: number;
+  score: number; // score normalized for TT with ply (mate-distance safe)
   flag: number;
   bestUci: string | null;
 };
@@ -81,7 +88,6 @@ type SearchState = {
 
   killers: Array<[string | null, string | null]>;
   history: Map<string, number>;
-
   tt: Map<bigint, TTEntry>;
 
   rootBestUci: string | null;
@@ -90,7 +96,7 @@ type SearchState = {
 };
 
 // ============================
-// Zobrist (BigInt)
+// Zobrist (BigInt) - FIX: include castling + ep
 // ============================
 const FILES = "abcdefgh";
 const PIECES = ["P", "N", "B", "R", "Q", "K", "p", "n", "b", "r", "q", "k"] as const;
@@ -114,6 +120,8 @@ function rand64(rng: () => number): bigint {
 type ZobristTables = {
   pieceSquare: Record<PieceKey, bigint[]>;
   side: bigint;
+  castling: bigint[]; // 16 states
+  epFile: bigint[]; // 9 states (0..7 file or 8 = none)
 };
 
 const Z: ZobristTables = (() => {
@@ -122,7 +130,9 @@ const Z: ZobristTables = (() => {
   for (const p of PIECES) {
     pieceSquare[p] = Array.from({ length: 64 }, () => rand64(rng));
   }
-  return { pieceSquare, side: rand64(rng) };
+  const castling = Array.from({ length: 16 }, () => rand64(rng));
+  const epFile = Array.from({ length: 9 }, () => rand64(rng));
+  return { pieceSquare, side: rand64(rng), castling, epFile };
 })();
 
 function getPieceKey(piece: any): PieceKey | null {
@@ -130,6 +140,28 @@ function getPieceKey(piece: any): PieceKey | null {
   const t = piece.type as string;
   if (piece.color === "w") return t.toUpperCase() as PieceKey;
   return t as PieceKey;
+}
+
+function parseFenMeta(fen: string): { castlingMask: number; epFileIdx: number } {
+  // FEN: "board turn castling ep half full"
+  const parts = fen.split(" ");
+  const castling = parts[2] ?? "-";
+  const ep = parts[3] ?? "-";
+
+  let mask = 0;
+  if (castling.includes("K")) mask |= 1;
+  if (castling.includes("Q")) mask |= 2;
+  if (castling.includes("k")) mask |= 4;
+  if (castling.includes("q")) mask |= 8;
+
+  let epIdx = 8; // none
+  if (ep !== "-" && ep.length >= 2) {
+    const f = ep[0];
+    const i = FILES.indexOf(f);
+    if (i >= 0) epIdx = i;
+  }
+
+  return { castlingMask: mask, epFileIdx: epIdx };
 }
 
 function zobristKey(game: Chess): bigint {
@@ -147,10 +179,14 @@ function zobristKey(game: Chess): bigint {
       const file = c;
       const rank = 7 - r;
       const idx = file + rank * 8;
-
       key ^= Z.pieceSquare[pk][idx];
     }
   }
+
+  const fen = game.fen();
+  const meta = parseFenMeta(fen);
+  key ^= Z.castling[meta.castlingMask];
+  key ^= Z.epFile[meta.epFileIdx];
 
   if (game.turn() === "b") key ^= Z.side;
   return key;
@@ -183,7 +219,27 @@ function shouldStop(state: SearchState): boolean {
 }
 
 // ============================
-// Evaluation (White POV)
+// Mate score normalization for TT (ply-safe)
+// ============================
+function isMateScore(score: number): boolean {
+  return Math.abs(score) > MATE / 2;
+}
+
+// Convert score from "current ply" to "TT stored" (root-ish normalized)
+function toTTScore(score: number, ply: number): number {
+  if (!isMateScore(score)) return score;
+  // If winning mate: score positive, push away by ply
+  return score > 0 ? score + ply : score - ply;
+}
+
+// Convert score from TT stored to "current ply"
+function fromTTScore(score: number, ply: number): number {
+  if (!isMateScore(score)) return score;
+  return score > 0 ? score - ply : score + ply;
+}
+
+// ============================
+// Evaluation (White POV) - CPU weak friendly
 // ============================
 function evalPieceSquare(file: string, rank: number, type: string): number {
   let bonus = 0;
@@ -198,6 +254,7 @@ function evalPieceSquare(file: string, rank: number, type: string): number {
   }
 
   if (type === "k") {
+    // nhẹ thôi: vua ra giữa bị phạt (midgame)
     if (rank >= 3 && rank <= 6) bonus -= 20;
     else bonus += 10;
   }
@@ -205,8 +262,8 @@ function evalPieceSquare(file: string, rank: number, type: string): number {
   return bonus;
 }
 
-function evaluateBoard(game: Chess): number {
-  if (game.isCheckmate()) return -MATE;
+function evaluateBoardWhite(game: Chess): number {
+  // terminal draw conditions
   if ((game as any).isDraw?.() || (game as any).isStalemate?.() || (game as any).isInsufficientMaterial?.()) return 0;
 
   const board = game.board();
@@ -228,22 +285,24 @@ function evaluateBoard(game: Chess): number {
 
       // pawn near promotion
       if (piece.type === "p") {
-        if (piece.color === "w" && rank === 7) score += 400;
-        if (piece.color === "b" && rank === 2) score -= 400;
+        if (piece.color === "w" && rank === 7) score += 350;
+        if (piece.color === "b" && rank === 2) score -= 350;
       }
     }
   }
 
-  // mobility nhẹ (giúp bot bớt “đứng hình”)
-  // hệ số 1 để không quá tốn/không làm eval lệch
-  const mobility = game.moves().length;
-  score += game.turn() === "w" ? mobility : -mobility;
+  // NOTE: bỏ mobility game.moves() để giảm CPU cực mạnh (quan trọng cho depth=6)
+  // Thưởng nhẹ nếu đối thủ đang bị chiếu (king pressure) => engine hướng mate tốt hơn
+  if (game.inCheck()) {
+    // side-to-move is in check => bad for side-to-move
+    score += game.turn() === "w" ? -60 : +60;
+  }
 
   return score;
 }
 
 function evaluateSTM(game: Chess): number {
-  const wScore = evaluateBoard(game);
+  const wScore = evaluateBoardWhite(game);
   return game.turn() === "w" ? wScore : -wScore;
 }
 
@@ -269,22 +328,28 @@ function isPromotion(mv: Move): boolean {
   return Boolean((mv as any).promotion);
 }
 
+function givesCheck(game: Chess, mv: Move): boolean {
+  // make/undo to detect check
+  game.move(mv);
+  const chk = game.inCheck();
+  game.undo();
+  return chk;
+}
+
 // ============================
-// Ordering
+// Ordering (FIX: check-first)
 // ============================
-function scoreForOrdering(
-  state: SearchState,
-  mv: Move,
-  ply: number,
-  ttBestUci?: string | null
-): number {
+function scoreForOrdering(state: SearchState, game: Chess, mv: Move, ply: number, ttBestUci?: string | null): number {
   const uci = uciOf(mv);
 
   // PV first
   if (state.pvMoveUci && uci === state.pvMoveUci) return 10_000_000;
 
-  // TT best move (second priority)
+  // TT best move
   if (ttBestUci && uci === ttBestUci) return 9_000_000;
+
+  // CHECK FIRST (mate hunting)
+  if (givesCheck(game, mv)) return 8_000_000;
 
   // Captures: MVV-LVA
   if (isCapture(mv)) return 5_000_000 + mvvLvaScore(mv);
@@ -306,26 +371,24 @@ function scoreForOrdering(
   return 0;
 }
 
-function orderMoves(
-  state: SearchState,
-  moves: Move[],
-  ply: number,
-  ttBestUci?: string | null
-): Move[] {
+function orderMoves(state: SearchState, game: Chess, moves: Move[], ply: number, ttBestUci?: string | null): Move[] {
   return moves
-    .map((mv) => ({ mv, s: scoreForOrdering(state, mv, ply, ttBestUci) }))
+    .map((mv) => ({ mv, s: scoreForOrdering(state, game, mv, ply, ttBestUci) }))
     .sort((a, b) => b.s - a.s)
     .map((x) => x.mv);
 }
 
 // ============================
-// Quiescence
+// Quiescence (CPU weak friendly + mate distance safe)
 // ============================
 function quiescence(state: SearchState, game: Chess, alpha: number, beta: number, ply: number): number {
   if (state.stop) return 0;
 
   state.nodes++;
   if (shouldStop(state)) return 0;
+
+  // cap quiescence depth
+  if (ply >= QS_MAX_PLIES) return evaluateSTM(game);
 
   const standPat = evaluateSTM(game);
   if (standPat >= beta) return beta;
@@ -335,11 +398,11 @@ function quiescence(state: SearchState, game: Chess, alpha: number, beta: number
   let moves = (game.moves({ verbose: true }) as Move[]).filter((m) => isCapture(m) || isPromotion(m));
   if (!moves.length) return alpha;
 
-  // QS ordering: MVV-LVA only (rẻ + đúng mục đích)
+  // QS ordering: MVV-LVA only
   moves.sort((a, b) => mvvLvaScore(b) - mvvLvaScore(a));
 
-  // limit vừa đủ mạnh mà vẫn nhanh
-  if (moves.length > 32) moves = moves.slice(0, 32);
+  // limit
+  if (moves.length > 24) moves = moves.slice(0, 24);
 
   for (const mv of moves) {
     game.move(mv);
@@ -357,32 +420,36 @@ function quiescence(state: SearchState, game: Chess, alpha: number, beta: number
 
 // ============================
 // AlphaBeta (Negamax) + TT
+// FIX: mate distance, check extension, TT score normalize
 // ============================
-function alphaBeta(
-  state: SearchState,
-  game: Chess,
-  depth: number,
-  alpha: number,
-  beta: number,
-  ply: number
-): number {
+function alphaBeta(state: SearchState, game: Chess, depth: number, alpha: number, beta: number, ply: number): number {
   if (state.stop) return 0;
 
   state.nodes++;
   if (shouldStop(state)) return 0;
+
+  // terminal: checkmate distance (prefer faster mate)
+  if (game.isCheckmate()) {
+    return -MATE + ply; // side-to-move is mated
+  }
+  if ((game as any).isDraw?.() || (game as any).isStalemate?.() || (game as any).isInsufficientMaterial?.()) {
+    return 0;
+  }
 
   const key = zobristKeyFast(game);
 
   // TT probe
   const tt = state.tt.get(key);
   if (tt && tt.depth >= depth) {
-    if (tt.flag === TT_EXACT) return tt.score;
-    if (tt.flag === TT_LOWER) alpha = Math.max(alpha, tt.score);
-    else if (tt.flag === TT_UPPER) beta = Math.min(beta, tt.score);
-    if (alpha >= beta) return tt.score;
+    const ttScore = fromTTScore(tt.score, ply);
+
+    if (tt.flag === TT_EXACT) return ttScore;
+    if (tt.flag === TT_LOWER) alpha = Math.max(alpha, ttScore);
+    else if (tt.flag === TT_UPPER) beta = Math.min(beta, ttScore);
+    if (alpha >= beta) return ttScore;
   }
 
-  if (depth <= 0 || game.isGameOver()) {
+  if (depth <= 0) {
     return quiescence(state, game, alpha, beta, ply);
   }
 
@@ -390,15 +457,18 @@ function alphaBeta(
   if (!moves.length) return evaluateSTM(game);
 
   const ttBestUci = tt?.bestUci ?? null;
-  moves = orderMoves(state, moves, ply, ttBestUci);
+  moves = orderMoves(state, game, moves, ply, ttBestUci);
 
   let bestScore = -INF;
   let bestUci: string | null = null;
   const alphaOrig = alpha;
 
   for (const mv of moves) {
+    // check extension (light)
+    const ext = givesCheck(game, mv) ? CHECK_EXTENSION : 0;
+
     game.move(mv);
-    const score = -alphaBeta(state, game, depth - 1, -beta, -alpha, ply + 1);
+    const score = -alphaBeta(state, game, depth - 1 + ext, -beta, -alpha, ply + 1);
     game.undo();
 
     if (state.stop) return 0;
@@ -445,11 +515,11 @@ function alphaBeta(
     }
   }
 
-  // TT store (1 lần)
+  // TT store (normalize mate score for ply)
   state.tt.set(key, {
     key,
     depth,
-    score: bestScore,
+    score: toTTScore(bestScore, ply),
     flag,
     bestUci,
   });
@@ -576,8 +646,8 @@ export function findBestMoveTS(
     let alpha = -INF;
     let beta = INF;
 
-    // aspiration window nhẹ
-    if (depth > 1 && Math.abs(bestScore) < MATE / 2) {
+    // aspiration window nhẹ (mate score thì bỏ window)
+    if (depth > 1 && !isMateScore(bestScore)) {
       alpha = bestScore - 80;
       beta = bestScore + 80;
     }
@@ -606,10 +676,8 @@ export function findBestMoveTS(
       bestMove = mv;
     }
 
-    // deadline guard (ngoài shouldStop để dừng sớm hơn 1 chút)
-    // nếu muốn ép đủ depth (không khuyến khích trên UI thread)
-	if (Date.now() >= deadline && depth >= (opts.preferDepth ?? 0)) break;
-
+    // hết giờ thì dừng; preferDepth chỉ là mục tiêu
+    if (Date.now() >= deadline) break;
   }
 
   const pvUci = buildPvFromTT(new Chess(rootFen), state.tt, 16);

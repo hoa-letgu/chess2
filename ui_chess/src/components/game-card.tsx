@@ -1,47 +1,17 @@
-import React from "react";
-
+import { ArrowUpRight, Bot, Users } from "lucide-react";
 interface GameCardProps {
   title: string;
+  subtitle?: string;
   description: string;
   image: string;
+  accent?: string;
+  number?: string;
+  secondaryLabel?: string;
   onClick: () => void;
-  onMouseEnter?: () => void;
-  onMouseLeave?: () => void;
 }
-
-export default function GameCard({
-  title,
-  description,
-  image,
-  onClick,
-  onMouseEnter,
-  onMouseLeave,
-}: GameCardProps) {
-  return (
-    <div
-      onClick={onClick}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      className="
-        relative h-50 md:h-60 
-        rounded-[36px] 
-        overflow-hidden cursor-pointer 
-        group shadow-2xl transition-all duration-500
-        hover:scale-[1.03]
-      "
-    >
-      {/* Ảnh nền */}
-      <img
-        src={image}
-        alt={title}
-        className="
-          absolute inset-0 w-full h-full object-cover
-          transition-transform duration-700 group-hover:scale-110
-        "
-      />
-
-      {/* Lớp phủ mờ */}
-      <div className="absolute inset-0 bg-black/50 group-hover:bg-black/30 transition-all" />
-    </div>
-  );
+export default function GameCard({ title, subtitle, description, image, accent = "gold", number, secondaryLabel = "Online", onClick }: GameCardProps) {
+  return <button type="button" className={`arena-game-card accent-${accent}`} onClick={onClick} aria-label={`Chơi ${title}`}>
+    <div className="game-card-art"><img src={image} alt="" loading="lazy" /><span className="game-card-number">{number}</span><span className="game-card-launch"><ArrowUpRight size={20} /></span></div>
+    <div className="game-card-copy"><span className="game-card-subtitle">{subtitle}</span><h3>{title}</h3><p>{description}</p><div className="game-card-meta"><span><Bot size={14} /> Đấu bot</span><span><Users size={14} /> {secondaryLabel}</span><ArrowUpRight size={17} className="game-card-arrow" /></div></div>
+  </button>;
 }

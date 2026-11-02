@@ -1,3 +1,4 @@
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import React, { useEffect } from "react";
 
 type RoomInfo = {
@@ -23,9 +24,8 @@ export function RoomSettingsGo({
   if (!showSettings) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-slate-800 p-6 rounded-lg w-[420px]">
-        <h2 className="text-lg font-bold mb-4">🎮 Chọn chế độ chơi</h2>
+    <Dialog open={showSettings} onOpenChange={setShowSettings}><DialogContent className="arena-settings-dialog">
+        <DialogTitle>Chọn chế độ chơi</DialogTitle><DialogDescription>Luyện tập cùng máy hoặc quản lý chế độ hiện tại.</DialogDescription>
 
         {/* ===== BOT MODE ===== */}
         <button
@@ -125,7 +125,6 @@ export function RoomSettingsGo({
         >
           Đóng
         </button>
-      </div>
-    </div>
+    </DialogContent></Dialog>
   );
 }

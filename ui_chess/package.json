@@ -7,7 +7,15 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:ludo": "node --experimental-strip-types --test src/games/Ludo/ludoEngine.test.mjs",
+    "test:quan": "node --experimental-strip-types --test src/games/OAnQuan/engine.test.mjs",
+    "test:chem": "node --experimental-strip-types --test src/games/CoChem/engine.test.mjs",
+    "test:up": "node --experimental-strip-types --test src/games/CoUp/engine.test.mjs",
+    "test:tycoon": "node --experimental-strip-types --test src/games/Tycoon/engine.test.mjs",
+    "test:shogi": "node --experimental-strip-types --test src/games/Shogi/engine.test.mjs",
+    "test:othello": "node --experimental-strip-types --test src/games/Othello/engine.test.mjs",
+    "test:checkers": "node --experimental-strip-types --test src/games/Checkers/engine.test.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
