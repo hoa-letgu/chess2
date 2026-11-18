@@ -19,9 +19,9 @@ export default function CoUpGame({onExit}:{onExit:()=>void}) {
   useEffect(()=>()=>stop(),[stop]);
   const play=useCallback((move:Move)=>{
     if(locked.current||paused||state.winner!==null)return;
-    const next=applyUpMove(state,move),piece=state.board[move.from]!;
-    locked.current=true;setSelected(null);setHint(null);setMotion({...move,piece,arrived:false});
-    timer.current=window.setTimeout(()=>{setMotion({...move,piece,arrived:true});timer.current=window.setTimeout(()=>{setState(next);setMotion(null);locked.current=false;timer.current=null;},320);},30);
+    const next=applyUpMove(state,move);
+    locked.current=true;setSelected(null);setHint(null);setState(next);
+    locked.current=false;
   },[state,paused]);
   useEffect(()=>{
     if(!botTurn||busy||paused||finished||settings||rules||exit||resign)return;

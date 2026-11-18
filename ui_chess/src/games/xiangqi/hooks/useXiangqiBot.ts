@@ -1,5 +1,5 @@
 // src/games/xiangqi/hooks/useXiangqiBot.ts
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { findBestBotMove } from "../utils/xiangqiBotEngine";
 import type { XiangqiPieceKey } from "../utils/pieces";
 
@@ -12,7 +12,6 @@ export function useXiangqiBot({
   turn,
   botSide,
   onBotMove,
-  botThinking,
   setBotThinking,
   historyKeys,
   pausedAfterUndo,      // ⭐ BOT sẽ dừng sau undo / redo
@@ -41,60 +40,32 @@ export function useXiangqiBot({
   depth?: number;
 }) {
 
+  const callbacks=useRef({onBotMove,setBotThinking});
+  useEffect(()=>{callbacks.current={onBotMove,setBotThinking};},[onBotMove,setBotThinking]);
   useEffect(() => {
-	   // ================================
-  // 0) VÁN ĐÃ KẾT THÚC → TUYỆT ĐỐI KHÔNG CHẠY BOT
-  // ================================
-   if (gameOver) return;
-
-
-    // ================================
-    // 1) Không phải chế độ BOT → thoát
-    // ================================
-    if (mode !== "bot") return;
-
-    // ================================
-    // 2) Không tới lượt BOT → thoát
-    // ================================
-    if (turn !== botSide) return;
-
-    // ================================
-    // 3) Sau Undo / Redo → BOT PHẢI DỪNG LẠI
-    //    Chỉ khi bấm "Tiếp tục" thì bật pausedAfterUndo = false
-    // ================================
-    if (pausedAfterUndo) return;
-
-    // ================================
-    // 4) BOT đang nghĩ rồi → thoát
-    // ================================
-    if (botThinking) return;
-
-    // ================================
-    // 5) Bắt đầu suy nghĩ
-    // ================================
-    setBotThinking(true);
-
-    const best = findBestBotMove(board, botSide, historyKeys, depth);
-
-      if (!best) {
-        console.log("BOT không có nước đi.");
-        setBotThinking(false);
-        return;
-      }
-
-      // BOT đánh
-      onBotMove(best);
-
-      setBotThinking(false);
-  }, [
-    board,
-    turn,
-    mode,
-    botSide,
-    botThinking,
-    pausedAfterUndo,  // ⭐ thêm vào dependency list
-    historyKeys,
-    depth,
-	gameOver,   // ⭐ BẮT BUỘC
-  ]);
+    if(gameOver || mode!=="bot" || turn!==botSide || pausedAfterUndo) {
+      callbacks.current.setBotThinking(false);
+      return;
+    }
+    let stopped=false;
+    let best: ReturnType<typeof findBestBotMove>=null;
+    let worker: Worker | null=null;
+    const finish=()=>{
+      if(stopped)return;
+      stopped=true;clearTimeout(timer);worker?.terminate();
+      callbacks.current.setBotThinking(false);
+      // Depth one is a bounded fallback if workers are unavailable or fail.
+      const move=best??findBestBotMove(board,botSide,historyKeys,1);
+      if(move)callbacks.current.onBotMove(move);
+    };
+    callbacks.current.setBotThinking(true);
+    const timer=setTimeout(finish,4000);
+    try {
+      worker=new Worker(new URL('./xiangqi-bot.worker.ts',import.meta.url),{type:'module'});
+      worker.onmessage=({data})=>{if(stopped)return;if(data.move)best=data.move;if(data.done)finish();};
+      worker.onerror=finish;
+      worker.postMessage({board,botSide,historyKeys,depth:depth??4});
+    } catch {finish();}
+    return ()=>{stopped=true;clearTimeout(timer);worker?.terminate();};
+  },[board,turn,mode,botSide,pausedAfterUndo,historyKeys,depth,gameOver]);
 }

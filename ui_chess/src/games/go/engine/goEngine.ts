@@ -68,9 +68,10 @@ export function applyMove(
   state: GoState,
   r: number,
   c: number
-): { ok: false } | { ok: true; state: GoState } {
+): { ok: false; reason:string } | { ok: true; state: GoState } {
   const { board, turn, history } = state;
-  if (board[r][c] !== null) return { ok: false };
+  if (!inside(board,r,c)) return {ok:false,reason:"Giao điểm nằm ngoài bàn cờ."};
+  if (board[r][c] !== null) return { ok: false,reason:"Giao điểm này đã có quân." };
 
   const next: Board = board.map(row => [...row]);
   next[r][c] = turn;
@@ -90,10 +91,10 @@ export function applyMove(
 
   // suicide
   const self = collectGroup(next, r, c, turn);
-  if (self.liberties === 0) return { ok: false };
+  if (self.liberties === 0) return { ok: false,reason:"Nước tự sát: nhóm quân không còn khí." };
 
   const key = boardToKey(next);
-  if (history.has(key)) return { ok: false }; // SUPERKO
+  if (history.has(key)) return { ok: false,reason:"Không được lặp lại thế cờ (ko)." }; // SUPERKO
 
   const newHistory = new Set(history);
   newHistory.add(key);

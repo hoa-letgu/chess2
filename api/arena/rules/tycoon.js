@@ -1,7 +1,7 @@
-// Generated from Tycoon/engine.ts. SHA256: cbb1fe8cc21e0ba5af45e8903aff8ccba5ad825568bd5c93dc566e2490bc4fc8
-                                    
-                                                                                                             
-                                                                                                                          
+// Generated from Tycoon/engine.ts. SHA256: 9fad8728ae275e0b12cd48b969f1010f8ce83db7feb01046bb764c7f5ec2711e
+
+
+
 const city = (name        , tag        , price        , group        )       => ({ name, tag, kind: 'city', price, rent: price / 10, group, fee: 50 + group * 25 });
 const special = (name        , tag        , kind          , price = 0)       => ({ name, tag, kind, price, rent: 0, group: -1, fee: 0 });
 export const BOARD         = [
@@ -30,15 +30,16 @@ export const CARDS = [
   { title: 'Nâng cấp hạ tầng', text: 'Trả $40, cộng $35 cho mỗi cấp nhà bạn đang sở hữu.', effect: 'repair', amount: 40 },
   { title: 'All aboard!', text: 'Đến ga kế tiếp. Nhận $200 nếu đi qua Xuất phát; xử lý ô ga như bình thường.', effect: 'rail', amount: 0 },
 ]         ;
-                                                                                                                                 
-                                                     
-                                                                               
-                           
-                                                                                              
-                                                                                                
-                                                                                                                                
-  
-                                                                                                                                                                                        
+
+
+
+
+
+
+
+
+
+
 export const money = (value        ) => '$' + value.toLocaleString('en-US');
 export function randomIndex(length        )         {
   if (!Number.isInteger(length) || length < 1 || length > 0x100000000) throw Error('Khoảng ngẫu nhiên không hợp lệ.');
@@ -159,6 +160,7 @@ export function empireAction(original             , action        )             
     const remaining = liquidationValue(s, p.id); if (s.debt.creditor !== null) s.players[s.debt.creditor].cash += remaining; p.cash = 0; p.alive = false;
     s.assets = s.assets.map(a => a?.owner === p.id ? null : a); s.debt = null; note(s, `${p.name} phá sản. Tài sản được ngân hàng thu hồi.`); advance(s);
   } else if (action.type === 'end') { if (s.phase !== 'manage') throw Error('Cần xử lý ô hoặc khoản nợ trước khi hết lượt.'); advance(s); }
+  s.revision = (original.revision ?? 0) + 1; s.lastAction = action;
   return s;
 }
 export function chooseEmpireAction(s             )                {

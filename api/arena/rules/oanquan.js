@@ -1,8 +1,8 @@
-// Generated from OAnQuan/engine.ts. SHA256: 14354ebe238a2cc0638f17b269ff993b7d1e6af51723a144defd8ec8e90071e7
-                         
-                               
-                                                                                                                                                                                                                                                
-                                                                                                                       
+// Generated from OAnQuan/engine.ts. SHA256: 397ebaec971bdb17ff4e3f0f51ea4a690393887f5c9c853285258c38d330d1f5
+
+
+
+
 export const ROWS = [[0,1,2,3,4],[6,7,8,9,10]];
 export const isQuan = (i        ) => i === 5 || i === 11;
 const step = (i        , direction           ) => (i + direction + 12) % 12;
@@ -44,6 +44,7 @@ export function playQuan(original           , pit        , direction           ,
     break;
   }
   s.moves++;
+  s.lastMove={pit,direction,actor,number:s.moves};
   s.log=[`${title} chọn ${pitLabel(pit)}, rải ${direction===1?'theo':'ngược'} chiều vòng bàn · ${captured?`ăn ${captured} điểm`:'chưa ăn quân'}.`,...s.log].slice(0,8);
   if(!s.quan[5]&&!s.quan[11]) {
     for(const side of [0,1]         ) {const remaining=ROWS[side].reduce((n,i)=>n+s.pits[i],0);s.scores[side]+=remaining;for(const i of ROWS[side])s.pits[i]=0;}

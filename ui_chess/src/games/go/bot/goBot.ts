@@ -187,7 +187,7 @@ function alphaBeta(
 }
 
 /* ================= BOT MOVE ================= */
-export function thinkBotMove(state: GoState): Move | null {
+export function thinkBotMove(state: GoState, depth = MAX_DEPTH): Move | null {
   TT.clear();
   const me = state.turn;
 
@@ -200,7 +200,7 @@ export function thinkBotMove(state: GoState): Move | null {
 
     const score = alphaBeta(
       res.state,
-      MAX_DEPTH,
+      depth,
       -Infinity,
       Infinity,
       false,

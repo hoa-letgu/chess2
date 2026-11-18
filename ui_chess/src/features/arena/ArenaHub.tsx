@@ -1,3 +1,4 @@
+import { gameSocketOptions } from '@/context/gameSocketOptions';
 import { loadCustomPuzzles } from '@/games/CoThe/custom-puzzles';
 import { PUZZLES, legalMoves as cotheMoves } from '@/games/CoThe/engine';
 import type { Board as CoTheBoard, Side as CoTheSide } from '@/games/CoThe/engine';
@@ -62,7 +63,7 @@ export default function ArenaHub({ onExit, initialGame = 'chess' }: { onExit: ()
   const refresh = useCallback(() => setTick(t => t + 1), []);
   useEffect(() => {
     if (!user?.id) return;
-    const socket = io({ path: '/arena-socket', transports: ['websocket'], withCredentials: true });
+    const socket = io({ ...gameSocketOptions, path: '/arena-socket' });
     socket.on('connect', () => { setConnected(true); refresh(); });
     socket.on('disconnect', () => setConnected(false));
     socket.on('connect_error', () => setConnected(false));
@@ -93,9 +94,12 @@ export default function ArenaHub({ onExit, initialGame = 'chess' }: { onExit: ()
     const data = await api(`/auth/${register ? 'register' : 'login'}`, { username, password }); setUser(data.user); window.dispatchEvent(new Event('arena-auth-changed')); setPassword('');
   }); }
   function enter(next: Room) { setSelected(null); setRoom(next); setRoomId(next.id); }
-  function action(type: string, extra: object = {}) { if (!room) return; void run(async () => {
-    const data = await api(`/rooms/${room.id}/action`, { type, version: room.version, ...extra }); enter(data.room);
-  }); }
+  async function action(type: string, extra: object = {}) { if (!room) return; let failure: string | undefined;
+    await run(async () => { try {
+      const data = await api(`/rooms/${room.id}/action`, { type, version: room.version, ...extra }); enter(data.room);
+    } catch(e) { failure=e instanceof Error?e.message:'Nước đi không hợp lệ.';throw e; } });
+    return failure;
+  }
   function topup(amount: number) { void run(async () => {
     // Preserve the key on network failure so retrying cannot credit twice.
     if (topupRequest.current?.amount !== amount) topupRequest.current = { amount, requestId: Array.from(crypto.getRandomValues(new Uint8Array(20)), b => b.toString(16).padStart(2, '0')).join('') };
@@ -110,7 +114,7 @@ export default function ArenaHub({ onExit, initialGame = 'chess' }: { onExit: ()
       if (own) { setSelected(pos); return; }
       if (!selected) return;
       action('move', { from: selected, to: pos, promotion });
-    } else action('move', { to: pos });
+    } else return action('move', { to: pos });
   }
   function exit() {
     if (room?.status === 'playing') { setConfirmation({ type: 'exit' }); return; }
@@ -138,7 +142,7 @@ export default function ArenaHub({ onExit, initialGame = 'chess' }: { onExit: ()
           {room.status === 'waiting' && <div className="coin-notice">Bàn đã được đăng trong sảnh. Xu chỉ bị giữ khi người thứ hai vào bàn và ván bắt đầu.</div>}
           {room.result && <div className="coin-result" role="status"><h2>{room.result.winner === -1 ? 'Ván hòa' : room.result.winner === seat ? 'Bạn đã thắng!' : 'Bạn đã thua'}</h2><p>{room.result.reason}</p><b>{room.stake === 0 ? 'Bàn miễn phí · không đổi số dư' : room.result.winner === -1 ? `Hoàn ${money(room.stake)} xu` : room.result.winner === seat ? `Nhận ${money(2 * room.stake)} xu · lãi ${money(room.stake)} xu` : `Mất ${money(room.stake)} xu`}</b></div>}
           {room.game==='cothe' && <div className="coin-notice"><strong>勢 · {room.state.title}</strong><br/>Đỏ phải chiếu liên tiếp và chiếu bí trong {room.state.limit} nước đỏ. Đen đi quân trực tiếp để hóa giải. Đã đi {room.state.used}/{room.state.limit} nước đỏ. Bàn luyện tập miễn phí.</div>}
-          {isClassicGame(room.game) ? <ArenaBoard winner={room.game === 'chess' && room.result ? (room.result.winner === 0 ? 'w' : room.result.winner === 1 ? 'b' : null) : null} turnLabel={room.status==='waiting'?'Đang chờ đối thủ':room.status==='finished'?'Ván đã kết thúc':undefined} playerNames={[room.players[0]?.username??'Đang chờ…',room.players[1]?.username??'Đang chờ…']} checkSide={(room.game === 'xiangqi' || room.game === 'cothe') ? (room.state.turn === 0 ? 'red' : 'black') : undefined} game={room.game === 'cothe' ? 'xiangqi' : room.game} board={room.state.board} seat={seat} canMove={canMove} selected={selected} lastMove={room.state.lastMove} legalTargets={room.game==='cothe'&&selected?cotheMoves(room.state.board as CoTheBoard,seat as CoTheSide).filter(move=>move.from[0]===selected[0]&&move.from[1]===selected[1]).map(move=>move.to):[]} onSquare={clickSquare} /> : <Suspense fallback={<p role="status">Đang mở bàn online…</p>}><OnlineNativeMatch key={`${room.id}-${room.version}`} game={room.game} native={room.state.native} playerNames={[room.players[0]?.username??'Đang chờ…',room.players[1]?.username??'Đang chờ…']} seat={seat} canMove={canMove} send={command => action('move', command)}/></Suspense>}
+          {isClassicGame(room.game) ? <ArenaBoard key={room.id} finished={room.status==='finished'} drawn={room.result?.winner===-1} winner={room.game === 'chess' && room.result ? (room.result.winner === 0 ? 'w' : room.result.winner === 1 ? 'b' : null) : null} turnLabel={room.status==='waiting'?'Đang chờ đối thủ':room.status==='finished'?'Ván đã kết thúc':undefined} playerNames={[room.players[0]?.username??'Đang chờ…',room.players[1]?.username??'Đang chờ…']} checkSide={(room.game === 'xiangqi' || room.game === 'cothe') ? (room.state.turn === 0 ? 'red' : 'black') : undefined} game={room.game === 'cothe' ? 'xiangqi' : room.game} board={room.state.board} seat={seat} canMove={canMove} selected={selected} lastMove={room.state.lastMove} legalTargets={room.game==='cothe'&&selected?cotheMoves(room.state.board as CoTheBoard,seat as CoTheSide).filter(move=>move.from[0]===selected[0]&&move.from[1]===selected[1]).map(move=>move.to):[]} onSquare={clickSquare} /> : <Suspense fallback={<p role="status">Đang mở bàn online…</p>}><OnlineNativeMatch key={["coup","oanquan","tycoon"].includes(room.game) ? room.id : `${room.id}-${room.version}`} game={room.game} native={room.state.native} playerNames={[room.players[0]?.username??'Đang chờ…',room.players[1]?.username??'Đang chờ…']} seat={seat} canMove={canMove} send={command => action('move', command)}/></Suspense>}
           {room.game === 'go' && <p className="coin-small">Luật thử nghiệm: tính diện tích, komi 6,5; cấm lặp bàn cờ. Hai lần bỏ lượt liên tiếp chấm điểm. Hãy bắt hết quân chết trước khi cùng bỏ lượt.</p>}
           {room.game === 'xiangqi' && <p className="coin-small">Luật thử nghiệm: hết nước hợp lệ tính thua; lặp thế 3 lần tính hòa, chưa phân xử trường chiếu/trường tróc.</p>}
           <div className="coin-match-actions">

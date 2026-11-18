@@ -1,0 +1,21 @@
+.quan-motion-surface{position:relative;isolation:isolate}
+.quan-vaults{display:flex;justify-content:space-between;gap:12px;padding:10px 16px;color:#4e684e}
+.quan-vault{min-width:80px;display:flex;gap:9px;align-items:center;padding:7px 14px;border:1px solid #ceb58177;background:#fff4d8aa;border-radius:16px;font-size:12px}
+.quan-vault strong{font-size:22px;color:#6c8449;font-variant-numeric:tabular-nums}
+.quan-hand{align-self:center;font-size:12px;color:#987845;min-width:54px;text-align:center}
+.quan-motion-tools{display:flex;gap:14px;justify-content:center;align-items:center;font-size:12px;padding:8px;color:#657453;flex-wrap:wrap}
+.quan-motion-tools label{display:flex;align-items:center;gap:5px}
+.quan-flying-pebble{position:absolute;z-index:80;width:13px;height:17px;border-radius:45% 55% 48% 42%;background:radial-gradient(ellipse at 30% 25%,#fffaf0,#ded3b4 65%,#ac9c7b);box-shadow:0 3px 4px #4d442c55;pointer-events:none}
+.quan-flying-pebble.is-quan-token{width:40px;height:52px;background:none;border-radius:0;box-shadow:none;filter:drop-shadow(0 3px 5px #bb8c3e77)}
+.quan-flying-pebble svg{width:100%;height:100%;overflow:visible}
+.quan-golden-wave{position:absolute;width:65px;height:65px;border-radius:50%;border:2px solid #e8ba53;box-shadow:0 0 12px #edc474aa;z-index:75;pointer-events:none}
+.quan-gold-spark{position:absolute;width:5px;height:5px;background:#eec46d;border-radius:50%;z-index:76;pointer-events:none}
+.quan-points-fly{position:absolute;font-size:24px;color:#af731d;font-weight:900;text-shadow:0 1px 2px #fff4c9;z-index:85;pointer-events:none}
+.quan-pit.is-selected{transition:box-shadow .15s ease,filter .15s ease}
+.quan-celebration{position:absolute;inset:0;z-index:90;pointer-events:none;overflow:hidden}
+.quan-celebration i{position:absolute;top:12%;font-style:normal;color:#c6a04d;font-size:22px;animation:quan-confetti 1.3s ease-out both}
+.quan-final-quan{text-align:center;color:#a7742e;font-size:13px;padding:8px}
+@keyframes quan-confetti{from{opacity:0;transform:translateY(-20px) rotate(-20deg)}20%{opacity:.85}to{opacity:0;transform:translateY(210px) rotate(120deg)}}
+@media(prefers-reduced-motion:reduce){.quan-celebration{display:none}.quan-pit.is-selected{transition:none}}
+@media(max-width:500px){.quan-vaults{padding:6px;gap:4px}.quan-vault{padding:5px 8px;min-width:0;font-size:10px}.quan-vault strong{font-size:18px}}
+.quan-earned-tokens{display:flex;justify-content:center;gap:12px;margin-top:8px}.quan-earned-token{display:grid;place-items:center;width:38px;height:48px;border-radius:45% 45% 40% 40%;background:linear-gradient(#f5d484,#d8a750);border:2px solid #b58b44;color:#617546;font-weight:800;box-shadow:0 3px 8px #b78b3e44}

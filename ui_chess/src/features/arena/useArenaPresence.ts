@@ -1,3 +1,4 @@
+import { gameSocketOptions } from '@/context/gameSocketOptions';
 import { useEffect } from 'react';
 import { io } from 'socket.io-client';
 import type { Socket } from 'socket.io-client';
@@ -16,7 +17,7 @@ export function useArenaPresence() {
         if (stopped) return;
         const next = data?.user?.id ?? null;
         if (next !== userId) { socket?.disconnect(); socket = null; userId = next; }
-        if (next && !socket) socket = io({ auth: { activityOnly: true }, path: '/arena-socket', transports: ['websocket', 'polling'] });
+        if (next && !socket) socket = io({ ...gameSocketOptions, auth: { activityOnly: true }, path: '/arena-socket' });
       } catch { /* Recheck when the API returns; existing sockets reconnect. */ }
       finally { checking = false; if (pending && !stopped) { pending = false; void check(); } }
     };

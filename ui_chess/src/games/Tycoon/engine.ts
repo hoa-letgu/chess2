@@ -33,6 +33,7 @@ export type Player = { id: number; name: string; bot: boolean; cash: number; pos
 export type Asset = { owner: number; level: number };
 export type Debt = { amount: number; creditor: number | null; reason: string };
 export type EmpireState = {
+  revision?: number; lastAction?: Action;
   players: Player[]; assets: (Asset | null)[]; turn: number; round: number; maxRounds: number;
   phase: 'roll' | 'buy' | 'manage' | 'debt' | 'finished'; dice: [number, number]; rolls: number;
   debt: Debt | null; deck: number[]; cursor: number; lastCard: number | null; logs: string[]; winners: number[]; reason: string;
@@ -158,6 +159,7 @@ export function empireAction(original: EmpireState, action: Action): EmpireState
     const remaining = liquidationValue(s, p.id); if (s.debt.creditor !== null) s.players[s.debt.creditor].cash += remaining; p.cash = 0; p.alive = false;
     s.assets = s.assets.map(a => a?.owner === p.id ? null : a); s.debt = null; note(s, `${p.name} phá sản. Tài sản được ngân hàng thu hồi.`); advance(s);
   } else if (action.type === 'end') { if (s.phase !== 'manage') throw Error('Cần xử lý ô hoặc khoản nợ trước khi hết lượt.'); advance(s); }
+  s.revision = (original.revision ?? 0) + 1; s.lastAction = action;
   return s;
 }
 export function chooseEmpireAction(s: EmpireState): Action | null {

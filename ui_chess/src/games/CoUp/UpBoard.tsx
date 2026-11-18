@@ -1,3 +1,4 @@
+import { useXiangqiMotion } from '@/features/arena/useXiangqiMotion';
 import ChineseMatchHeader, { ChineseFiles } from '@/features/arena/ChineseMatchHeader';
 import { BoardSurface } from '@/features/arena/MatchSurface';
 import CheckCallout from '@/features/arena/CheckCallout';
@@ -9,13 +10,14 @@ export function UpDisc({piece}:{piece:Piece}) {
 }
 function GridLines(){return <svg className="up-grid-lines" viewBox="0 0 900 1000" aria-hidden="true"><g>{Array.from({length:10},(_,r)=><line key={`h${r}`} x1="50" y1={50+r*100} x2="850" y2={50+r*100}/>)}{Array.from({length:9},(_,c)=>c===0||c===8?<line key={`v${c}`} x1={50+c*100} y1="50" x2={50+c*100} y2="950"/>:<path key={`v${c}`} d={`M${50+c*100} 50V450 M${50+c*100} 550V950`}/>)}<rect x="50" y="50" width="800" height="900" className="up-grid-outline"/><path d="M350 50 550 250m0-200L350 250m0 500 200 200m0-200L350 950"/>{[2,7].flatMap(r=>[1,7].flatMap(c=>[-1,1].flatMap(x=>[-1,1].map(y=><path key={`${r}-${c}-${x}-${y}`} d={`M${50+c*100+x*10} ${50+r*100+y*28}v${-y*18}h${x*18}`}/>))))}</g><g className="up-river"><text x="247" y="517">楚 河</text><text x="647" y="517">漢 界</text><path d="M390 500h120"/></g></svg>;}
 export default function UpBoard({state,selected,disabled,flip,motion,onSquare,playerNames}:{playerNames?:[string,string];state:UpState;selected:number|null;disabled:boolean;flip:boolean;motion:Motion|null;onSquare:(i:number)=>void}) {
+  const stage = useXiangqiMotion(state.board.map(p=>p?{key:p.id,kind:p.kind??p.role}:null),state.last,flip);
   const targets=selected===null?[]:pieceTargets(state,selected),check=isChecked(state,state.turn)?kingSquare(state,state.turn):-1;
   const displayIndex=(i:number)=>flip?89-i:i;
   const ghost=motion?displayIndex(motion.arrived?motion.to:motion.from):null;
-  return <div className="chinese-up-table"><ChineseMatchHeader turn={state.turn} names={playerNames} label={state.winner!==null?'Ván đã kết thúc':undefined}/><BoardSurface className="up-board-frame"><div className="up-frame-inscription"><span>暗 棋</span><span>龍 隱 奇 局</span><span>謀 定 而 動</span></div><ChineseFiles flip={flip}/><div className="up-board-grid" role="group" aria-label="Bàn cờ úp 9 cột 10 hàng">
+  return <div className="chinese-up-table"><ChineseMatchHeader turn={state.turn} names={playerNames} label={state.winner!==null?'Ván đã kết thúc':undefined}/><BoardSurface className="up-board-frame"><div className="up-frame-inscription"><span>暗 棋</span><span>龍 隱 奇 局</span><span>謀 定 而 動</span></div><ChineseFiles flip={flip}/><div ref={stage} className="up-board-grid" role="group" aria-label="Bàn cờ úp 9 cột 10 hàng">
     <GridLines/>{Array.from({length:90},(_,d)=>{
       const i=displayIndex(d),p=state.board[i],target=targets.includes(i),own=p?.side===state.turn,can=!disabled&&(own||target),revealed=state.last?.to===i&&state.last.revealed!==null;
-      return <button type="button" key={i} className={`up-point ${selected===i?'is-selected':''} ${target?'is-target':''} ${check===i?'is-check':''} ${state.last?.to===i?'is-last':''} ${revealed?'just-revealed':''} ${motion?.from===i?'is-departing':''}`} disabled={!can} onClick={()=>onSquare(i)} aria-label={`${coord(i)}, ${p?p.kind===null?`quân úp ${p.side===0?'đỏ':'đen'}, đi nước đầu như ${NAMES[p.role]}`:`${NAMES[p.kind]} ${p.side===0?'đỏ':'đen'}`:'trống'}${target?', có thể đi đến':''}`} aria-pressed={selected===i}>
+      return <button type="button" data-xq-cell={i} key={i} className={`up-point ${selected===i?'is-selected':''} ${target?'is-target':''} ${check===i?'is-check':''} ${state.last?.to===i?'is-last':''} ${revealed?'just-revealed':''} ${motion?.from===i?'is-departing':''}`} disabled={!can} onClick={()=>onSquare(i)} aria-label={`${coord(i)}, ${p?p.kind===null?`quân úp ${p.side===0?'đỏ':'đen'}, đi nước đầu như ${NAMES[p.role]}`:`${NAMES[p.kind]} ${p.side===0?'đỏ':'đen'}`:'trống'}${target?', có thể đi đến':''}`} aria-pressed={selected===i}>
         {p&&<UpDisc piece={p}/>} {target&&<span className={p?'up-capture-ring':'up-target-dot'} aria-hidden="true"/>}
       </button>;
     })}{motion&&ghost!==null&&<div className="up-moving-disc" style={{left:`${(ghost%9)*100/9+1.1}%`,top:`${Math.floor(ghost/9)*10+1}%`}}><UpDisc piece={motion.piece}/></div>}

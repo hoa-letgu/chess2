@@ -24,6 +24,7 @@ export default function GomokuGame({onExit}:{onExit:()=>void}) {
 
   /* ===== GAME STATE ===== */
   const [board, setBoard] = useState<Cell[][]>(createBoard);
+  const [lastPlacement,setLastPlacement]=useState<[number,number]|null>(null);
   const [turn, setTurn] = useState<Cell>("X");
   const [winner, setWinner] = useState<Cell | null>(null);
   const [winnerLine, setWinnerLine] = useState<Pos[] | null>(null);
@@ -68,12 +69,14 @@ export default function GomokuGame({onExit}:{onExit:()=>void}) {
       setWinnerLine(winLine);
     }
 
+    setLastPlacement([r,c]);
     setBoard(next);
     setTurn(turn === "X" ? "O" : "X");
   };
 
   /* ================= RESET ================= */
   const resetGame = () => {
+    setLastPlacement(null);
     setBoard(createBoard());
     setTurn("X");
     setWinner(null);
@@ -150,6 +153,7 @@ export default function GomokuGame({onExit}:{onExit:()=>void}) {
         board={board}
         onMove={handleMove}
         winnerLine={winnerLine}
+        lastPlacement={lastPlacement}
         canMove={!winner && (mode === "bot" ? turn === "X" : mode === "online" && roomReady && seat === turn)}
       />
 

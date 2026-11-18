@@ -169,18 +169,6 @@ const handleRedo = () => {
   // APPLY MOVE (ANIMATION + UPDATE STATE)
   // ============================================
 const applyMove = ({ from, to, piece, check }) => {
-  // ===== ANIMATION =====
-  setMovingPiece({ piece, from, to });
-  setMovingSquare(from);
-  setHideSquare(from);
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      setMovingSquare(to);
-    });
-  });
-
-  setTimeout(() => {
     const [r1, c1] = squareToCoord(from);
     const [r2, c2] = squareToCoord(to);
 
@@ -212,7 +200,6 @@ const applyMove = ({ from, to, piece, check }) => {
         lastMove: { from, to },
       });
     }
-  }, 220);
 };
 
 

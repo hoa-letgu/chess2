@@ -1,0 +1,10 @@
+.xq-motion-layer{position:absolute;display:flex;align-items:center;justify-content:center;pointer-events:none!important;z-index:240;transform-origin:center}
+.xq-mover{z-index:250;filter:drop-shadow(0 5px 3px #27150955)}
+.xq-flight-shadow{z-index:230;border-radius:50%;background:radial-gradient(ellipse,#24170766,transparent 65%)}
+.xq-impact{z-index:255;border-radius:50%;background:radial-gradient(ellipse,transparent 24%,#d9b78488 40%,transparent 68%)}
+.xq-gold{background:radial-gradient(circle,transparent 32%,#ffdf8599 40%,transparent 48%)}
+.xq-fire{background:radial-gradient(circle,#fff4b7aa 8%,#f5a33b99 28%,#8c412777 42%,transparent 65%)}
+.xq-trail{z-index:235;border-radius:50%;background:radial-gradient(ellipse,#fce9ba88,transparent 65%)}
+.imperial-cell.xq-checked .imperial-xiangqi-piece,.up-point.is-check .up-disc{animation:xq-king-warning 1.2s ease-in-out infinite}
+@keyframes xq-king-warning{50%{filter:drop-shadow(0 0 7px #f04438);box-shadow:0 0 12px #dc3b3299}}
+@media(prefers-reduced-motion:reduce){.imperial-cell.xq-checked .imperial-xiangqi-piece,.up-point.is-check .up-disc{animation:none;outline:2px solid #c43d30}}

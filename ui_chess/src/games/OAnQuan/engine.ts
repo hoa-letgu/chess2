@@ -1,6 +1,6 @@
 export type Side = 0 | 1;
 export type Direction = -1 | 1;
-export type QuanState = { pits: number[]; quan: boolean[]; scores: [number, number]; captured: [number, number]; turn: Side; moves: number; finished: boolean; winner: Side | -1 | null; reason: string; log: string[]; protectYoung: boolean };
+export type QuanState = { lastMove?: {pit:number;direction:Direction;actor:Side;number:number}; pits: number[]; quan: boolean[]; scores: [number, number]; captured: [number, number]; turn: Side; moves: number; finished: boolean; winner: Side | -1 | null; reason: string; log: string[]; protectYoung: boolean };
 export type Frame = Pick<QuanState, 'pits' | 'quan' | 'scores'> & { focus: number | null; hand: number; text: string };
 export const ROWS = [[0,1,2,3,4],[6,7,8,9,10]];
 export const isQuan = (i: number) => i === 5 || i === 11;
@@ -43,6 +43,7 @@ export function playQuan(original: QuanState, pit: number, direction: Direction,
     break;
   }
   s.moves++;
+  s.lastMove={pit,direction,actor,number:s.moves};
   s.log=[`${title} chọn ${pitLabel(pit)}, rải ${direction===1?'theo':'ngược'} chiều vòng bàn · ${captured?`ăn ${captured} điểm`:'chưa ăn quân'}.`,...s.log].slice(0,8);
   if(!s.quan[5]&&!s.quan[11]) {
     for(const side of [0,1] as const) {const remaining=ROWS[side].reduce((n,i)=>n+s.pits[i],0);s.scores[side]+=remaining;for(const i of ROWS[side])s.pits[i]=0;}
