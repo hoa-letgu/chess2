@@ -9,7 +9,6 @@ import {
 import { thinkBotMove } from "./bot/goBot";
 
 import { GoBoard } from "./components/GoBoard";
-import { RoomSettingsGo } from "./components/RoomSettingsGo";
 import { PopupModal } from "@/games/go/components/PopupModal";
 import { useSocket } from "@/context/SocketProvider";
 
@@ -20,7 +19,7 @@ export default function GoGame({ onExit }: { onExit: () => void }) {
 
   // ================= MODE =================
   const [mode, setMode] = useState<"bot" | "online" | null>("bot");
-  const [showSettings, setShowSettings] = useState(false);
+
 
   // ================= GAME STATE =================
   const [state, setState] = useState<GoState>(() =>
@@ -87,7 +86,7 @@ export default function GoGame({ onExit }: { onExit: () => void }) {
       setRoomId(state.roomId);
       setPlayerColor(seat);
       setState(state);
-      setShowSettings(false);
+
       setMode("online");
     });
 
@@ -101,10 +100,9 @@ export default function GoGame({ onExit }: { onExit: () => void }) {
         message: "Đối thủ đã rời phòng. Bạn thắng!",
         onAccept: () => {
           setPopup({ type: null });
-          setMode(null);
+          setMode("bot");
           setRoomId("");
           resetGame();
-          setShowSettings(true);
         },
       });
     });
@@ -114,10 +112,9 @@ export default function GoGame({ onExit }: { onExit: () => void }) {
       message,
       onAccept: () => {
         setPopup({ type: null });
-        setMode(null);           // quay về chọn chế độ
+        setMode("bot");           // quay về chọn chế độ
         setRoomId("");
         resetGame();
-        setShowSettings(true);   // hiện lại chọn phòng
       },
     });
   });
@@ -133,7 +130,7 @@ export default function GoGame({ onExit }: { onExit: () => void }) {
 
   // ================= RENDER =================
   return (
-    <><MatchHeader mode={mode === "online" ? "online" : "offline"}><button onClick={onExit}>← Sảnh game</button><strong>BOARD ARENA · CỜ VÂY</strong><button onClick={() => setShowSettings(true)}>Cài đặt</button></MatchHeader><main className="offline-legacy-page"><section className="offline-match-panel">
+    <><MatchHeader mode={mode === "online" ? "online" : "offline"}><button onClick={onExit}>← Sảnh game</button><strong>BOARD ARENA · CỜ VÂY</strong></MatchHeader><main className="offline-legacy-page"><section className="offline-match-panel">
       <h1 className="text-xl font-bold mb-2">
         Cờ Vây –{" "}
         {mode === "bot"
@@ -144,10 +141,10 @@ export default function GoGame({ onExit }: { onExit: () => void }) {
         – {turn === "black" ? "⚫ Đen" : "⚪ Trắng"}
       </h1>
 
-      <MatchPlayers turn={turn === "black" ? 0 : 1} players={[{name:"Quân đen", detail: mode === "bot" ? "Bạn" : "Người chơi đen"},{name:"Quân trắng",detail:mode === "bot" ? "Đối thủ máy" : "Người chơi trắng"}]} />
+      <MatchPlayers turn={turn === "black" ? 0 : 1} players={[{name:"Quân đen", detail: mode === "bot" ? "Bạn" : "Người chơi đen"},{name:"Quân trắng",detail:mode === "bot" ? "Máy · Khó nhất" : "Người chơi trắng"}]} />
       <GoBoard
         board={board}
-        canMove={!showSettings && (mode === "bot" ? turn === "black" : mode === "online" && turn === playerColor)}
+        canMove={(mode === "bot" ? turn === "black" : mode === "online" && turn === playerColor)}
         onClick={mode === "online" ? handleOnlineMove : handleLocalMove}
       />
 
@@ -168,20 +165,6 @@ export default function GoGame({ onExit }: { onExit: () => void }) {
       </div>
 
       {/* ============ SETTINGS / ROOMS ============ */}
-      <RoomSettingsGo
-        showSettings={showSettings}
-        setShowSettings={setShowSettings}
-        mode={mode}
-        setMode={setMode}
-        newRoomName={newRoomName}
-        setNewRoomName={setNewRoomName}
-        roomList={roomList}
-        loadRooms={() => socket?.emit("go:rooms:list")}
-        socket={socket}
-        setRoomId={setRoomId}
-        resetBoardState={resetGame}
-        isPlaying={!!mode}
-      />
 
       {/* ============ POPUP ============ */}
       <PopupModal popup={popup} setPopup={setPopup} />

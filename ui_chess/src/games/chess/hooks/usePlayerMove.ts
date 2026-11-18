@@ -1,7 +1,7 @@
 // src/games/chess/hooks/usePlayerMove.ts
 import { useState } from "react";
 import { Chess } from "chess.js";
-import { getMovePath, findKingInCheck } from "@/games/chess/utils/chessHelpers";
+import { findKingInCheck } from "@/games/chess/utils/chessHelpers";
 
 export function usePlayerMove({
   fen,
@@ -94,38 +94,12 @@ export function usePlayerMove({
     // ==========================
     setIsAnimating(true);     // ⭐ NGĂN FEN SYNC gây giật quân
 
-    // —— Animation path
-    const movingPieceKey =
-      piece.color === "w" ? piece.type.toUpperCase() : piece.type;
-
-    const path = getMovePath(from, to);
-    setMovingPath(path);
-    setMovingStep(0);
-
-    setHidePiece(from);
-    setMovingPiece({ piece: movingPieceKey, from, to });
-
-    // chạy từng bước animation
-    let i = 0;
-    const timer = setInterval(() => {
-      i++;
-      if (i >= path.length) {
-        clearInterval(timer);
-      } else {
-        setMovingStep(i);
-      }
-    }, 55);
-
-    // —— reset UI click
     setSelectedSquare(null);
     setLegalTargets([]);
 
     // ==========================
     // ⭐ END ANIMATION → thực hiện nước đi
     // ==========================
-    const totalDelay = path.length * 55 + 50;
-
-    setTimeout(() => {
       const newGame = new Chess(fen);
       const made = newGame.move({ from, to, promotion });
 
@@ -156,7 +130,7 @@ export function usePlayerMove({
       setMovingPiece(null);
       setHidePiece(null);
       setIsAnimating(false);    // ⭐ Cho phép sync FEN → board cập nhật đúng
-    }, totalDelay);
+
   };
 
   return {

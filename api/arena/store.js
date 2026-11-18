@@ -2,29 +2,50 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomUUID, randomBytes, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { initPaymentSchema, walletMode, BALANCE_COLUMNS } from './payment-config.js';
+import { initAnalytics, syncMatch } from './analytics.js';
 import { initialState, applyGameMove } from './games.js';
+import { initWalletLocks, walletLock, assertWalletSpendable } from './wallet-lock.js';
+import { initGameMaintenance, assertGameAvailable } from './game-maintenance.js';
+import { initPromotions } from './promotions.js';
+import { initWalletAdjustments } from './wallet-adjustments.js';
+import { initTopupEvents } from './topup-events.js';
 
 const fail = message => { throw Error(message); };
 const hash = token => createHash('sha256').update(token).digest('hex');
 export class ArenaStore {
   constructor(path) {
+    this.databasePath = path;
     if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
     this.db = new DatabaseSync(path);
-    this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
+    this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
       CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, username TEXT UNIQUE COLLATE NOCASE, password TEXT NOT NULL, balance INTEGER NOT NULL DEFAULT 0 CHECK(balance>=0));
       CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), expires INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS matches(id TEXT PRIMARY KEY, data TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS ledger(id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), amount INTEGER NOT NULL, kind TEXT NOT NULL, match_id TEXT, request_key TEXT, created INTEGER NOT NULL, UNIQUE(user_id,request_key));
       CREATE INDEX IF NOT EXISTS ledger_user ON ledger(user_id,created);`);
+    initPaymentSchema(this);
+    initAnalytics(this);
+    initWalletLocks(this);
+    initGameMaintenance(this);
+    initPromotions(this);
+    initWalletAdjustments(this);
+    initTopupEvents(this);
   }
   transaction(fn) { this.db.exec('BEGIN IMMEDIATE'); try { const result = fn(); this.db.exec('COMMIT'); return result; } catch (e) { this.db.exec('ROLLBACK'); throw e; } }
-  publicUser(id) { return this.db.prepare('SELECT id,username,balance FROM users WHERE id=?').get(id); }
+  publicUser(id) {
+    const user = this.db.prepare('SELECT id,username,balance AS demo_balance,paid_balance,sandbox_balance,is_admin FROM users WHERE id=?').get(id);
+    if (!user) return null;
+    const mode = walletMode(this), lock = walletLock(this, id);
+    const balance = mode === 'demo' ? user.demo_balance : mode === 'paid' ? user.paid_balance : user.sandbox_balance;
+    return { ...user, ...lock, available_coins: balance - lock.locked_coins, balance, wallet_mode: mode };
+  }
   register(username, password) {
     username = typeof username === 'string' ? username.trim() : '';
     if (!/^[a-zA-Z0-9_]{3,24}$/.test(username)) fail('Tên đăng nhập gồm 3–24 chữ, số hoặc dấu gạch dưới.');
     if (typeof password !== 'string' || password.length < 8 || password.length > 128) fail('Mật khẩu cần từ 8 đến 128 ký tự.');
     const salt = randomBytes(16).toString('hex'), passwordHash = `${salt}:${scryptSync(password, salt, 64).toString('hex')}`, id = randomUUID();
-    try { this.db.prepare('INSERT INTO users(id,username,password) VALUES(?,?,?)').run(id, username, passwordHash); } catch (e) {
+    try { this.db.prepare('INSERT INTO users(id,username,password,created) VALUES(?,?,?,?)').run(id, username, passwordHash, Date.now()); } catch (e) {
       if (this.db.prepare('SELECT id FROM users WHERE username=?').get(username)) fail('Tên đăng nhập đã tồn tại.'); throw e;
     }
     return this.newSession(id);
@@ -50,16 +71,19 @@ export class ArenaStore {
     return row ? this.publicUser(row.user_id) : null;
   }
   logout(token) { if (token) this.db.prepare('DELETE FROM sessions WHERE token=?').run(hash(token)); }
-  credit(id, amount, kind, matchId = null, requestKey = null) {
+  credit(id, amount, kind, matchId = null, requestKey = null, mode = walletMode(this)) {
     if (!Number.isSafeInteger(amount)) fail('Số xu không hợp lệ.');
-    const result = this.db.prepare('UPDATE users SET balance=balance+? WHERE id=? AND balance+?>=0').run(amount, id, amount);
+    if (amount < 0) assertWalletSpendable(this, id, -amount, mode);
+    const column = BALANCE_COLUMNS[mode]; if (!column) fail('Ví không hợp lệ.');
+    const result = this.db.prepare(`UPDATE users SET ${column}=${column}+? WHERE id=? AND ${column}+?>=0 AND ${column}+?<=9007199254740991`).run(amount, id, amount, amount);
     if (!result.changes) fail('Không đủ xu.');
-    this.db.prepare('INSERT INTO ledger VALUES(?,?,?,?,?,?,?)').run(randomUUID(), id, amount, kind, matchId, requestKey, Date.now());
+    this.db.prepare('INSERT INTO ledger(id,user_id,amount,kind,match_id,request_key,created,wallet_mode) VALUES(?,?,?,?,?,?,?,?)').run(randomUUID(), id, amount, kind, matchId, requestKey, Date.now(), mode);
   }
   topup(id, amount, key) {
     if (![1000, 5000, 10000].includes(amount)) fail('Chọn gói 1.000, 5.000 hoặc 10.000 xu thử nghiệm.');
     if (typeof key !== 'string' || !/^[a-zA-Z0-9-]{16,80}$/.test(key)) fail('Mã giao dịch không hợp lệ.');
     return this.transaction(() => {
+      if (walletMode(this) !== 'demo') fail('Chế độ nạp giả lập đã tắt. Vui lòng dùng mục Nạp xu.');
       const old = this.db.prepare('SELECT amount,kind FROM ledger WHERE user_id=? AND request_key=?').get(id, key);
       if (old) { if (old.amount !== amount || old.kind !== 'demo_topup') fail('Mã giao dịch đã được sử dụng.'); return this.publicUser(id); }
       const sum = this.db.prepare("SELECT COALESCE(SUM(amount),0) total FROM ledger WHERE user_id=? AND kind='demo_topup' AND created>?").get(id, Date.now() - 86400000).total;
@@ -67,40 +91,47 @@ export class ArenaStore {
       this.credit(id, amount, 'demo_topup', null, key); return this.publicUser(id);
     });
   }
-  ledger(id) { return this.db.prepare('SELECT id,amount,kind,match_id,created FROM ledger WHERE user_id=? ORDER BY created DESC,rowid DESC LIMIT 50').all(id); }
+  ledger(id) { return this.db.prepare('SELECT id,amount,kind,match_id,created,wallet_mode FROM ledger WHERE user_id=? AND wallet_mode=? ORDER BY created DESC,rowid DESC LIMIT 50').all(id, walletMode(this)); }
   allMatches() { return this.db.prepare('SELECT data FROM matches ORDER BY rowid DESC').all().map(r => JSON.parse(r.data)); }
   activeMatch(id) { return this.allMatches().find(m => ['waiting', 'playing'].includes(m.status) && m.players.some(p => p.id === id)); }
   match(id) { const r = this.db.prepare('SELECT data FROM matches WHERE id=?').get(id); if (!r) fail('Bàn không tồn tại.'); return JSON.parse(r.data); }
-  save(m) { this.db.prepare('INSERT INTO matches VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data').run(m.id, JSON.stringify(m)); return m; }
-  create(id, { name, game, stake, size }) {
+  save(m) { this.db.prepare('INSERT INTO matches VALUES(?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data').run(m.id, JSON.stringify(m)); syncMatch(this, m); return m; }
+  create(id, { name, game, stake, size, puzzle }) {
     if (typeof name !== 'string' || !name.trim() || name.trim().length > 40) fail('Tên bàn cần từ 1 đến 40 ký tự.');
     if (!Number.isSafeInteger(stake) || stake < 0 || stake > 100000) fail('Mức cược cần là số nguyên từ 0 đến 100.000 xu.');
-    const state = initialState(game, size);
+    if (game === 'cothe' && stake !== 0) fail('Cờ thế online là bàn luyện tập 0 xu vì hai bên có mục tiêu khác nhau.');
+    const state = initialState(game, size, puzzle);
     return this.transaction(() => {
       if (this.activeMatch(id)) fail('Bạn đang ở một bàn khác.');
+      assertGameAvailable(this, game);
+      if (stake) assertWalletSpendable(this, id, stake);
       if (this.publicUser(id).balance < stake) fail('Không đủ xu tạo bàn.');
       if (this.allMatches().filter(m => m.status === 'waiting').length >= 100) fail('Sảnh đang đầy.');
       const u = this.publicUser(id);
-      return this.save({ id: randomUUID(), name: name.trim(), game, stake, state, version: 0, status: 'waiting', players: [{ id, username: u.username }], drawOffer: null, result: null, created: Date.now() });
+      return this.save({ id: randomUUID(), name: name.trim(), game, stake, state, wallet_mode: walletMode(this), version: 0, status: 'waiting', players: [{ id, username: u.username }], drawOffer: null, result: null, created: Date.now() });
     });
   }
   join(id, matchId) {
     return this.transaction(() => {
       const m = this.match(matchId);
       if (m.players.some(p => p.id === id)) return m;
+      assertGameAvailable(this, m.game);
       if (m.status !== 'waiting' || m.players.length !== 1) fail('Bàn đã bắt đầu hoặc đã đóng.');
       if (this.activeMatch(id)) fail('Bạn đang ở một bàn khác.');
+      if ((m.wallet_mode ?? 'demo') !== walletMode(this)) fail('Bàn thuộc chế độ ví cũ. Hãy tạo bàn mới.');
+      if (m.stake) for (const playerId of [m.players[0].id, id]) assertWalletSpendable(this, playerId, m.stake);
       const u = this.publicUser(id); m.players.push({ id, username: u.username });
       // Both holds and the transition to playing are committed together.
-      for (const p of m.players) if (m.stake) this.credit(p.id, -m.stake, 'stake_hold', m.id);
+      for (const p of m.players) if (m.stake) this.credit(p.id, -m.stake, 'stake_hold', m.id, null, m.wallet_mode ?? 'demo');
+      if (m.state.native?.players) m.state.native.players.forEach((player, i) => { player.name = m.players[i].username; player.bot = false; });
       m.status = 'playing'; m.version++; m.started = Date.now(); return this.save(m);
     });
   }
   finish(m, winner, reason) {
     if (m.status !== 'playing') fail('Ván đã kết thúc.');
     if (m.stake) {
-      if (winner === -1) for (const p of m.players) this.credit(p.id, m.stake, 'stake_refund', m.id);
-      else this.credit(m.players[winner].id, m.stake * 2, 'win_payout', m.id);
+      if (winner === -1) for (const p of m.players) this.credit(p.id, m.stake, 'stake_refund', m.id, null, m.wallet_mode ?? 'demo');
+      else this.credit(m.players[winner].id, m.stake * 2, 'win_payout', m.id, null, m.wallet_mode ?? 'demo');
     }
     m.status = 'finished'; m.result = { winner, reason }; m.finished = Date.now(); m.drawOffer = null;
   }

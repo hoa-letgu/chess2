@@ -27,3 +27,5 @@
 
 .offline-arena .legacy-chess-actions{justify-content:center}
 .offline-arena .legacy-reset{border:1px solid #4b5957;background:#293739;color:#e8eee8;border-radius:7px;padding:9px 14px;font-size:12px;cursor:pointer;margin-top:16px}
+
+.offline-arena .arena-match-header.xq-offline-mode>button{padding:2px 6px;min-height:22px;height:22px;font-size:13px;border-radius:5px;margin-left:5px;background:#263d30;color:#e4cf9a}

@@ -1,0 +1,43 @@
+/* Caro is played in notebook cells, with soft marker strokes. */
+.imperial-gomoku{color:#416760}
+.imperial-table.imperial-gomoku .imperial-frame{padding:7px;border:1px solid #d6d0b7;border-radius:10px;background:#faf6e9;box-shadow:0 14px 32px #274d4220,inset 0 0 0 2px #fffaf1}
+.imperial-gomoku .imperial-corner{display:none}
+.imperial-gomoku .imperial-board-stage{background:radial-gradient(ellipse at 40% 25%,#faf7eb,#f2eddd);box-shadow:0 0 0 1px #c7c29e;overflow:hidden}
+.imperial-gomoku .imperial-grid-lines{stroke:#bdbb91;stroke-width:3;opacity:.85}
+.imperial-gomoku .imperial-gomoku-piece{inset:4%;width:92%;height:92%;stroke:none;filter:drop-shadow(.3px .8px .35px #52452b24)}
+.imperial-gomoku .caro-mark-x{color:#08767d}
+.imperial-gomoku .caro-mark-o{color:#e67d28}
+.imperial-gomoku .caro-ink{stroke:currentColor;stroke-width:18;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.imperial-gomoku .caro-ink-glint{stroke:#76c2bd;stroke-width:4;stroke-linecap:round;fill:none;opacity:.65}
+.imperial-gomoku .caro-mark-o .caro-ink-glint{stroke:#ffcf5a;stroke-width:6;opacity:.95}
+.imperial-gomoku .imperial-seal{width:44px;height:40px;border:0;outline:0;border-radius:12px;background:#e4efea;color:#08767d;font:900 18px/1 'Segoe UI',sans-serif;letter-spacing:-2px;box-shadow:none;transform:rotate(-5deg)}
+.imperial-gomoku .imperial-heading p{color:#245e59;font-size:11px;letter-spacing:1.7px}
+.imperial-gomoku .imperial-heading div>span{color:#7c8b79}
+.imperial-gomoku .imperial-board-size{color:#7c8977;letter-spacing:1px}
+.imperial-gomoku .imperial-board-caption{color:#6f8172;font-size:10px;letter-spacing:.5px}
+.imperial-gomoku .imperial-cell:hover:not(:disabled){background:#22a39b16}
+.imperial-gomoku .imperial-cell:focus-visible{outline-color:#188b86}
+.imperial-gomoku .imperial-cell.cell-last{background:#55c2ba24}
+.imperial-gomoku .imperial-move-mark{left:76%;top:77%;width:12%;height:12%;min-width:2px;min-height:2px;background:#0c8b83;border:0;box-shadow:0 0 0 2px #e4f6e5}
+.imperial-gomoku .imperial-cell.imperial-win-point{background:#8dd9b65c;box-shadow:inset 0 0 0 1px #309a8380}
+
+.offline-arena[data-game=gomoku]{background:#e7eee8;color:#234941}
+.offline-arena[data-game=gomoku] .offline-legacy-page{background:radial-gradient(ellipse at 0 0,#d9ebe5,transparent 70%),#edf0e7;color:#234941}
+.offline-arena[data-game=gomoku] .arena-match-header{background:#f8faf4;border-color:#d6e2d9;color:#285c55}
+.offline-arena[data-game=gomoku] .arena-match-header button{color:#285c55;background:#e6efe7;border-color:#c8dacf}
+.offline-arena[data-game=gomoku] .arena-match-mode{color:#518477;border-color:#bfd6c7}
+.offline-arena[data-game=gomoku] .offline-match-panel{background:#fcfcf5;border:1px solid #d7e0d1;box-shadow:0 10px 34px #335c4110;border-radius:18px}
+.offline-arena[data-game=gomoku] .offline-match-panel>h1{color:#285c55;font-size:19px}
+.offline-arena[data-game=gomoku] .arena-match-players>div{background:#f1f5eb;border-color:#dee5d4}
+.offline-arena[data-game=gomoku] .arena-match-players>div.is-turn{background:#e7f1e6;border-color:#78b9a7}
+.offline-arena[data-game=gomoku] .arena-match-players strong{color:#266560}
+.offline-arena[data-game=gomoku] .arena-match-players>div:nth-child(2) strong{color:#cf742b}
+.offline-arena[data-game=gomoku] .arena-match-players small{color:#7f9180}
+.offline-arena[data-game=gomoku] .arena-player-seat{color:#5f8e7a;border-color:#bed4c1;background:#f8faef}
+.offline-arena[data-game=gomoku] .arena-player-turn{color:#3e8b76}
+.offline-arena[data-game=gomoku] .legacy-actions button{color:#337469;background:#e6eee0;border-color:#c7d6bd}
+@media(max-width:600px){.imperial-table.imperial-gomoku .imperial-frame{padding:4px;border-radius:6px}.imperial-gomoku .imperial-heading{gap:9px}.imperial-gomoku .imperial-heading p{font-size:9px;letter-spacing:.8px}.imperial-gomoku .imperial-heading div>span{font-size:8px}.imperial-gomoku .imperial-seal{width:34px;height:34px;font-size:15px}.offline-arena[data-game=gomoku] .offline-match-panel{padding:13px}}
+.offline-arena[data-game=gomoku] .offline-match-panel .imperial-table{max-width:900px}
+
+.offline-arena[data-game=gomoku] .arena-match-header>strong{color:#285c55}
+.offline-arena[data-game=gomoku] .arena-match-header>button,.offline-arena[data-game=gomoku] .arena-match-header>button:first-child,.offline-arena[data-game=gomoku] .offline-match-panel>button{color:#285c55;background:#e6efe7;border:1px solid #c8dacf;border-radius:8px;padding:9px 13px;font-size:12px;cursor:pointer}

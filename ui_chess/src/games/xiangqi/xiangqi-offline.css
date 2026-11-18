@@ -1,5 +1,5 @@
 .xq-offline-page{position:relative;isolation:isolate;min-height:100vh;min-height:100dvh;background:#142e29;color:#e5e9e6}
-.xq-offline-page::before{content:'';position:fixed;inset:0;z-index:-2;background:url('/xiangqi/bamboo-landscape.png') center center/cover no-repeat;pointer-events:none}
+.xq-offline-page::before{content:'';position:fixed;inset:0;z-index:-2;background:url('/cothe/bamboo-mystic.webp') center center/cover no-repeat;pointer-events:none}
 .xq-offline-page::after{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(90deg,#071c1729,#06171366 33%,#06171366 67%,#071c1729),linear-gradient(180deg,#06171355,transparent 28%,#06171322 75%,#06171388);pointer-events:none}
 .xq-offline-page .xq-offline-mode{width:fit-content;margin:0 auto;padding:6px 15px;border:1px solid #d4c19140;border-radius:20px;background:#112820c9;color:#e7d5ad;box-shadow:0 3px 15px #00181030;backdrop-filter:blur(8px)}
 .xq-offline-page .imperial-heading{padding:12px 14px 17px;border-radius:8px 8px 0 0;background:linear-gradient(90deg,#0e261edf,#0e261e99 78%,#0e261e55);text-shadow:0 1px 3px #0008}

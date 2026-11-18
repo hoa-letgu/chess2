@@ -1,14 +1,19 @@
+import { NATIVE_NAMES, isNative, initialNative, applyNative } from './native-games.js';
+import { newOnlinePuzzle, applyOnlinePuzzle } from './rules/cothe.js';
 import { Chess } from 'chess.js';
 import { playMove, boardToKey } from '../games/goRules.js';
 
-export const GAME_NAMES = { chess: 'Cờ vua', xiangqi: 'Cờ tướng', go: 'Cờ vây', gomoku: 'Cờ caro' };
+export const GAME_NAMES = { chess: 'Cờ vua', xiangqi: 'Cờ tướng', go: 'Cờ vây', gomoku: 'Cờ caro', cothe: 'Cờ thế', ...NATIVE_NAMES };
 const empty = (n, m = n) => Array.from({ length: n }, () => Array(m).fill(null));
 const inside = (b, p) => Array.isArray(p) && p.length === 2 && p.every(Number.isInteger) && p[0] >= 0 && p[0] < b.length && p[1] >= 0 && p[1] < b[0].length;
 const side = p => p ? (p === p.toUpperCase() ? 0 : 1) : -1;
 const sq = ([r, c]) => 'abcdefgh'[c] + (8 - r);
 
-export function initialState(game, size = 19) {
+export function initialState(game, size, puzzle) {
   if (!Object.hasOwn(GAME_NAMES, game)) throw Error('Trò chơi không hợp lệ.');
+  if (game === 'cothe') return newOnlinePuzzle(size ?? 10, puzzle);
+  if (isNative(game)) return initialNative(game);
+  size ??= 19;
   if (game === 'chess') return { board: chessBoard(new Chess()), turn: 0, moves: [], lastMove: null };
   if (game === 'xiangqi') {
     const board = empty(10, 9);
@@ -81,6 +86,8 @@ export function goScore(board) {
 
 // Only server-derived moves and outcomes can reach the wallet settlement code.
 export function applyGameMove(game, original, action) {
+  if (game === 'cothe') return applyOnlinePuzzle(original, action);
+  if (isNative(game)) return applyNative(game, original, action);
   const state = structuredClone(original), seat = state.turn;
   let winner = null, reason = null;
   if (game === 'chess') {

@@ -2,7 +2,6 @@ import { MatchHeader, MatchPlayers } from '@/features/arena/MatchSurface';
 // src/games/gomoku/GomokuGame.tsx
 import React, { useState, useEffect } from "react";
 import { GomokuBoard } from "./components/GomokuBoard";
-import { RoomSettingsGomoku } from "./components/RoomSettingsGomoku";
 import { PopupModal } from "./components/PopupModal";
 import { ROWS, COLS } from "./utils/constants";
 import { checkWin, type Pos } from "./utils/checkWin";
@@ -36,7 +35,7 @@ export default function GomokuGame({onExit}:{onExit:()=>void}) {
 
   /* ===== MODE ===== */
   const [mode, setMode] = useState<"bot" | "online" | null>("bot");
-  const [showSettings, setShowSettings] = useState(false);
+
 
   /* ===== ROOM UI ===== */
   const [newRoomName, setNewRoomName] = useState("");
@@ -129,15 +128,14 @@ export default function GomokuGame({onExit}:{onExit:()=>void}) {
   setRoomId(null);
   setRoomReady(false);
 
-  setMode(null);
-  setShowSettings(true);
+  setMode("bot");
 }
 
   
 
   /* ================= UI ================= */
   return (
-    <><MatchHeader mode={mode === "online" ? "online" : "offline"}><button onClick={onExit}>← Sảnh game</button><strong>BOARD ARENA · CỜ CARO</strong><button onClick={() => setShowSettings(true)}>Cài đặt</button></MatchHeader><main className="offline-legacy-page"><section className="offline-match-panel">
+    <><MatchHeader mode={mode === "online" ? "online" : "offline"}><button onClick={onExit}>← Sảnh game</button><strong>BOARD ARENA · CỜ CARO</strong></MatchHeader><main className="offline-legacy-page"><section className="offline-match-panel">
       <h1 className="text-xl font-bold mb-2">
         Cờ Caro –{" "}
         {winner
@@ -147,12 +145,12 @@ export default function GomokuGame({onExit}:{onExit:()=>void}) {
           : `Lượt: ${turn}`}
       </h1>
 
-      <MatchPlayers turn={turn === "X" ? 0 : 1} players={[{name:"Quân X",detail:mode === "bot" ? "Bạn" : "Người chơi X"},{name:"Quân O",detail:mode === "bot" ? "Đối thủ máy" : "Người chơi O"}]} />
+      <MatchPlayers turn={turn === "X" ? 0 : 1} players={[{name:"Quân X",detail:mode === "bot" ? "Bạn" : "Người chơi X"},{name:"Quân O",detail:mode === "bot" ? "Máy · Khó nhất" : "Người chơi O"}]} />
       <GomokuBoard
         board={board}
         onMove={handleMove}
         winnerLine={winnerLine}
-        canMove={!showSettings && !winner && (mode === "bot" ? turn === "X" : mode === "online" && roomReady && seat === turn)}
+        canMove={!winner && (mode === "bot" ? turn === "X" : mode === "online" && roomReady && seat === turn)}
       />
 
       {/* ===== RESET ===== */}
@@ -176,16 +174,6 @@ export default function GomokuGame({onExit}:{onExit:()=>void}) {
 
 
       {/* ===== MODE / ROOM SETTINGS ===== */}
-      <RoomSettingsGomoku
-        showSettings={showSettings}
-        setShowSettings={setShowSettings}
-        setMode={setMode}
-        setRoomId={setRoomId}
-        roomList={roomList}
-        loadRooms={() => socket?.emit("gomoku:rooms:list")}
-        newRoomName={newRoomName}
-        setNewRoomName={setNewRoomName}
-      />
 
       {/* ===== POPUP ===== */}
       <PopupModal popup={popup} setPopup={setPopup} />

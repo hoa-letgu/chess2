@@ -1,3 +1,4 @@
+import { BOT_PRESETS } from '@/features/arena/bot-presets';
 import { MatchHeader } from '@/features/arena/MatchSurface';
 //src\games\xiangqi\XiangqiGame.tsx
 import React, { useState, useEffect } from "react";
@@ -12,7 +13,6 @@ import { isInCheck } from "./utils/isInCheck";
 import { boardToKey } from "./utils/xiangqiBotEngine";
 //src/games/xiangqi/XiangqiGame.tsx
 import type { XiangqiPieceKey } from "./utils/pieces";
-import { RoomSettings } from "@/games/xiangqi/components/RoomSettings";
 
 import { PopupModal } from "@/games/chess/components/PopupModal";
 import { boardToFen, fenToBoard } from "./utils/xfengenerator";
@@ -26,7 +26,7 @@ export default function XiangqiGame() {
 
   const [mode, setMode] = useState<GameMode>("bot");
   const botSide: Side = "black";
-  
+
   type Seat = "red" | "black" | "spectator" | null;
 
 const [onlineSeat, setOnlineSeat] = useState<Seat>(null);
@@ -38,7 +38,7 @@ const [drawToastId, setDrawToastId] = useState<string | number | null>(null);
   const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null);
   const [checkStatus, setCheckStatus] = useState<string>("");
   const [gameResult, setGameResult] = useState<string>("");
-  const [showSettings, setShowSettings] = useState(true);
+
   const [roomList, setRoomList] = useState([]);
   const [newRoomName, setNewRoomName] = useState("");
   const [roomId, setRoomId] = useState("");
@@ -51,12 +51,12 @@ const [drawToastId, setDrawToastId] = useState<string | number | null>(null);
   const [history, setHistory] = useState([
     { board: initialBoard, turn: "red", lastMove: null }
   ]);
-  
+
   type Side = "red" | "black";
 
 const [viewSide, setViewSide] = useState<Side>("red");
 
-  
+
     const [popup, setPopup] = useState({
     type: null,
     message: "",
@@ -98,7 +98,7 @@ const [viewSide, setViewSide] = useState<Side>("red");
     }
     setBoard(b);
   }
-  
+
   function isValidBoard(b: any): b is (XiangqiPieceKey | null | "")[][] {
   if (!Array.isArray(b) || b.length !== 10) return false;
   for (let r = 0; r < 10; r++) {
@@ -290,7 +290,7 @@ const onDrawResult = ({ result }) => {
   setLastMove(st.lastMove || null);
 };
 
-  
+
 const onDrawRejected = () => {
   clearDrawToast();
   showError("Đối phương từ chối hòa");
@@ -351,7 +351,7 @@ const resetAllState = () => {
   setViewSide("red");
 
   setMode("bot");
-  setShowSettings(true);
+
 };
 
 
@@ -379,8 +379,8 @@ const resetAllState = () => {
   onBotMove: applyMove,
   historyKeys,
   gameOver,     // ⭐ THÊM
-  depth: 4,
-  pausedAfterUndo,
+  depth: BOT_PRESETS.xiangqi.depth,
+  pausedAfterUndo: pausedAfterUndo,
 });
 
 
@@ -456,15 +456,15 @@ const resetAllState = () => {
   }
 }, [board, turn, historyKeys, gameOver]);
 
-  
-  
-  
+
+
+
   const canPlayOnline =
   mode === "online" &&
   onlineSeat !== "spectator" &&
   onlineSeat === turn;
 
-  
+
 const clearDrawToast = () => {
   if (drawToastId) {
     dismissToast(drawToastId);
@@ -480,20 +480,24 @@ const clearDrawToast = () => {
    <div className="xq-offline-page">
     <div className="xiangqi-offline">
 <MatchHeader className="xq-offline-mode" mode={mode === "online" ? "online" : "offline"}>
-  Chế độ: {mode === "bot" ? "🤖 Đánh với BOT" : "🌍 Online"}
+  {mode === "bot" ? "BOT · Khó nhất" : "Online"}
+
 </MatchHeader>
 
-      
+
 
     <div className="xq-board-viewport">
     <XiangqiBoard
+      turnLabel={gameOver?'Ván đã kết thúc':undefined}
+      playerNames={mode==='bot'?[botSide==='red'?'Máy · Khó nhất':'Bạn',botSide==='black'?'Máy · Khó nhất':'Bạn']:undefined}
+      turn={turn}
 	  board={board}
 	  viewSide={viewSide}
 	  selectedSquare={selectedSquare}
 	  legalTargets={legalTargets}
 	  lastMove={lastMove}
 	  onClick={
-		(gameOver || showSettings || movingPiece)
+		(gameOver || movingPiece)
 		  ? undefined                       // ⛔ khóa bàn cờ khi kết thúc
 		  : mode === "bot"
 			? turn !== botSide
@@ -551,7 +555,7 @@ const clearDrawToast = () => {
         </div>
       )}
     </div>
-	
+
 	{mode === "online" && roomId && (
 		  <div className="flex justify-center mt-3">
 			<button
@@ -575,8 +579,8 @@ const clearDrawToast = () => {
 			</button>
 		  </div>
 		)}
-		
-		
+
+
 		{mode === "online" && roomId && canPlayOnline && (
 			  <div className="flex justify-center mt-2">
 				<button
@@ -595,19 +599,6 @@ const clearDrawToast = () => {
 
 
 	 {/* POPUPS */}
-      <RoomSettings
-        showSettings={showSettings}
-        setShowSettings={setShowSettings}
-        mode={mode}
-        setMode={setMode}
-        newRoomName={newRoomName}
-        setNewRoomName={setNewRoomName}
-        roomList={roomList}
-        loadRooms={() => socket?.emit("rooms:list")}
-        socket={socket}
-        setRoomId={setRoomId}
-        resetBoardState={resetBoardState}
-      />
 
       <PopupModal popup={popup} setPopup={setPopup} />
 	 </div>

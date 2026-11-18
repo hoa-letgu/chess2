@@ -1,6 +1,6 @@
 # Ô ăn quan · Làng quê
 
-Mở thẻ **Ô ăn quan** trong sảnh. Game tại chỗ miễn phí: chơi với Bé Trâu (máy) hoặc hai người cùng thiết bị; chưa có phòng online hoặc giao dịch ví xu.
+Mở thẻ **Ô ăn quan** trong sảnh. Game tại chỗ miễn phí: chơi với Bé Trâu (máy) hoặc hai người cùng thiết bị; Chọn Đấu online ở sảnh để dùng phòng hai người và ví xu thử nghiệm chung.
 
 ## Cách chơi của bản này
 

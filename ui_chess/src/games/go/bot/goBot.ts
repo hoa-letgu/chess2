@@ -1,3 +1,4 @@
+import { BOT_PRESETS } from '@/features/arena/bot-presets';
 import type { GoState } from "../engine/goEngine";
 import { applyMove } from "../engine/goEngine";
 import { opposite } from "../utils/rules";
@@ -6,7 +7,7 @@ import { getGroup } from "../utils/liberties";
 type Move = [number, number];
 
 const REGION = 3;          // 7x7
-const MAX_DEPTH = 5;       // sâu nhưng node ít
+const MAX_DEPTH = BOT_PRESETS.go.depth;       // sâu nhưng node ít
 const MAX_MOVES = 6;       // cắt nhánh mạnh
 
 /* ================= TRANSPOSITION TABLE ================= */

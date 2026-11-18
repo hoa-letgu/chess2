@@ -1,3 +1,5 @@
+import { KingResultBadge } from '@/features/arena/KingResultBadge';
+import { useChessMotion } from '@/features/arena/useChessMotion';
 import { BoardSurface } from '@/features/arena/MatchSurface';
 // src/games/chess/components/ChessBoard.tsx
 import type { CSSProperties } from "react";
@@ -37,6 +39,7 @@ export type SetupDrag = {
 
 type Props = {
   board: any[][];
+  winner?: 'w' | 'b' | null;
   selectedSquare: string | null;
   legalTargets: string[];
   lastMove: LastMove;
@@ -73,6 +76,7 @@ const easeInOutCubic = (t: number) =>
 
 export function ChessBoard({
   board,
+  winner,
   selectedSquare,
   legalTargets,
   lastMove,
@@ -103,7 +107,10 @@ export function ChessBoard({
   // ================================
   // đo kích thước bàn cờ (px)
   // ================================
-  const boardRef = useRef<HTMLDivElement | null>(null);
+  const position = setupMode ? '' : board.flat().map(piece =>
+    piece ? (piece.color === 'w' ? piece.type.toUpperCase() : piece.type) : '.'
+  ).join('');
+  const boardRef = useChessMotion(position, !isWhiteView);
   const [boardPx, setBoardPx] = useState(480);
 
   useLayoutEffect(() => {
@@ -305,6 +312,7 @@ export function ChessBoard({
       if (isLastTo) style.background = "rgba(255,220,0,0.55)";
 
       if (isSelected) style.outline = "3px solid #53a6ff";
+      if (isLegal) style.background = "rgba(62,205,245,.48)";
       if (isLegal) style.boxShadow = "inset 0 0 0 3px rgba(50,150,255,0.65)";
 
       if (isKingCheck) {
@@ -324,6 +332,7 @@ export function ChessBoard({
       squares.push(
         <button
           key={square}
+          data-chess-cell={r * 8 + c}
           aria-label={`${square}, ${pieceKey ?? "trống"}`}
           aria-pressed={isSelected}
           onClick={() => {
@@ -394,6 +403,7 @@ export function ChessBoard({
               draggable={false}
             />
           )}
+          {!setupMode && <KingResultBadge piece={pieceKey} winner={winner} />}
         </button>
       );
     }

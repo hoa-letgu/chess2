@@ -152,8 +152,8 @@ export function useChessBot({
 
 
 		const result = findBestMoveTS(clone, {
-		  maxDepth: 6,
-		  timeLimitMs: 1000,
+		  maxDepth: depth,
+		  timeLimitMs,
 		  cache: cacheRef.current,
 		});
 

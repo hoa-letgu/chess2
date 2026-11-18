@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 
 data/
+
+# Merchant secrets
+.env
+.env.*
+!.env.example

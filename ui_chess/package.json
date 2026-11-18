@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "test:cothe": "node --experimental-strip-types --test src/games/CoThe/engine.test.mjs",
     "test:ludo": "node --experimental-strip-types --test src/games/Ludo/ludoEngine.test.mjs",
     "test:quan": "node --experimental-strip-types --test src/games/OAnQuan/engine.test.mjs",
     "test:chem": "node --experimental-strip-types --test src/games/CoChem/engine.test.mjs",

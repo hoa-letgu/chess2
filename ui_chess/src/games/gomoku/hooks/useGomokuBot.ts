@@ -1,3 +1,4 @@
+import { BOT_PRESETS } from '@/features/arena/bot-presets';
 import { useEffect } from "react";
 
 type Cell = "X" | "O" | null;
@@ -185,7 +186,7 @@ export function useGomokuBot({
     for (const [r, c] of moves) {
       const b = cloneBoard(board);
       b[r][c] = BOT;
-      const score = minimax(b, 2, -Infinity, Infinity, false);
+      const score = minimax(b, BOT_PRESETS.gomoku.replyDepth, -Infinity, Infinity, false);
 
       if (score > bestScore) {
         bestScore = score;
@@ -194,9 +195,10 @@ export function useGomokuBot({
     }
 
     if (bestMove) {
-      setTimeout(() => {
+      const timer = window.setTimeout(() => {
         onMove(bestMove[0], bestMove[1]);
       }, 300);
+      return () => window.clearTimeout(timer);
     }
   }, [enabled, board, turn, winner, onMove]);
 }

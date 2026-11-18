@@ -4,7 +4,7 @@ Game này dùng biến thể **cờ gánh 5×5**, với tên Cờ chém theo cá
 
 ## Chơi
 
-Mở **Cờ chém** từ sảnh. Mặc định Bạn Lá đấu Chú Cò; chọn **Ván mới** để đổi mức bot hoặc chơi hai người cùng thiết bị. Đây là game tại chỗ miễn phí, chưa tích hợp phòng online hoặc ví xu.
+Mở **Cờ chém** từ sảnh. Mặc định Bạn Lá đấu Chú Cò; chọn **Ván mới** để đổi mức bot hoặc chơi hai người cùng thiết bị. Chọn Offline để chơi miễn phí tại chỗ, hoặc Đấu online để vào hệ thống phòng hai người và ví xu thử nghiệm chung.
 
 - Ban đầu: mỗi bên 8 quân, 9 điểm trống. Bên Lá đi trước. Bên Sen chiếm hàng trên, hai góc hàng 2 và điểm trái hàng giữa; Lá đối xứng lại.
 - Đi một quân một bước tới điểm trống có đường nối. Ngang/dọc tại mọi điểm, chéo chỉ khi tổng tọa độ hàng/cột là chẵn. Hình vẽ và bộ sinh nước đi dùng cùng hàm `neighbors`.

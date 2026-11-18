@@ -1,6 +1,6 @@
 # Cờ cá ngựa · Neon Club
 
-Mở từ thẻ **Cờ cá ngựa** ở sảnh game. Mặc định chơi với 3 bot; chọn **Ván mới → Cùng bạn bè** để chơi 2–4 người trên cùng thiết bị. Đây là game miễn phí tại chỗ, chưa tích hợp phòng online hoặc ví xu.
+Mở từ thẻ **Cờ cá ngựa** ở sảnh game. Mặc định chơi với 3 bot; chọn **Ván mới → Cùng bạn bè** để chơi 2–4 người trên cùng thiết bị. Chế độ này miễn phí tại chỗ. Chọn Đấu online ở sảnh để chơi phòng hai người với tài khoản và ví xu thử nghiệm chung.
 
 - `ludoEngine.ts`: luật chơi thuần, tách khỏi giao diện và hiệu ứng.
 - `LudoBoard.tsx`: bàn và quân ngựa SVG với góc nhìn nghiêng, ô nổi khối và bốn màu.

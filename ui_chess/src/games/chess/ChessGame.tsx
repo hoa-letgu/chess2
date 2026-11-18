@@ -1,3 +1,4 @@
+import { BOT_PRESETS } from '@/features/arena/bot-presets';
 import { MatchHeader, MatchPlayers } from '@/features/arena/MatchSurface';
 // ======================================
 // src/games/chess/ChessGame.tsx
@@ -183,7 +184,7 @@ export default function ChessGame({ onExit }: { onExit: () => void }) {
   const [historyIndex, setHistoryIndex] = useState(0);
 
   // BOT đi trước / sau (old setting)
-  const [botPlaysWhite, setBotPlaysWhite] = useState(true);
+  const [botPlaysWhite, setBotPlaysWhite] = useState(false);
   const [pieceTheme, setPieceTheme] = useState<"classic" | "neo" | "wood">("classic");
 
   // user color (BOT mode)
@@ -198,7 +199,7 @@ export default function ChessGame({ onExit }: { onExit: () => void }) {
   const [capturedPiece, setCapturedPiece] = useState<any>(null);
   const [deadKingSquare, setDeadKingSquare] = useState<string | null>(null);
 
-  const [botDepth] = useState(6);
+  const [botDepth] = useState<number>(BOT_PRESETS.chess.depth);
   const [botThinking, setBotThinking] = useState(false);
   const [setupText, setSetupText] = useState("");
   // const [isAnimating, setIsAnimating] = useState(false);
@@ -207,7 +208,7 @@ export default function ChessGame({ onExit }: { onExit: () => void }) {
   const [newRoomName, setNewRoomName] = useState("");
 
   const [gameFinished, setGameFinished] = useState(false);
-  const [showSettings, setShowSettings] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
 
   const isJoiningRef = useRef(false);
   const lastLocalMoveIdRef = useRef<string | null>(null);
@@ -215,9 +216,9 @@ export default function ChessGame({ onExit }: { onExit: () => void }) {
   const [botInfo, setBotInfo] = useState<any>(null);
 
   // ✅ START / PAUSE BOT
-  const [gameStarted, setGameStarted] = useState(false);
-  const [botPausedUser, setBotPausedUser] = useState(true); // mặc định pause
-  const botPaused = !gameStarted || botPausedUser;
+  const [gameStarted, setGameStarted] = useState(true);
+  const [botPausedUser, setBotPausedUser] = useState(false);
+  const botPaused = !gameStarted || botPausedUser || showSettings;
 
   // =======================
   // ✅ SETUP MODE (drag-drop)
@@ -360,9 +361,9 @@ export default function ChessGame({ onExit }: { onExit: () => void }) {
     setGameFinished(false);
     setBotInfo(null);
 
-    // reset start/pause
-    setGameStarted(false);
-    setBotPausedUser(true);
+    // A new practice match starts immediately. Settings still pause the engine.
+    setGameStarted(true);
+    setBotPausedUser(false);
 
     // reset setup
     setSetupMode(false);
@@ -485,6 +486,7 @@ export default function ChessGame({ onExit }: { onExit: () => void }) {
     mode,
     playerColor,
     botDepth,
+    timeLimitMs: BOT_PRESETS.chess.timeLimitMs,
     fen,
     game: gameRef.current,
     history,
@@ -715,7 +717,7 @@ export default function ChessGame({ onExit }: { onExit: () => void }) {
       <div className="offline-legacy-page offline-chess-page">
         <div className="offline-match-panel">
           <div className="text-center text-sm mb-2 text-slate-400">
-            {mode === "online" && roomId ? `Phòng: ${roomId}` : "Luyện tập · Cờ vua"}
+            {mode === "online" && roomId ? `Phòng: ${roomId}` : "Luyện tập · BOT khó nhất"}
           </div>
 
           <MatchPlayers turn={currentTurn === "w" ? 0 : 1} players={[
@@ -724,6 +726,7 @@ export default function ChessGame({ onExit }: { onExit: () => void }) {
           ]}/>
           <ChessBoard
             board={displayGame.board()}
+            winner={displayGame.isCheckmate() ? (displayGame.turn() === 'w' ? 'b' : 'w') : null}
             selectedSquare={selectedSquare}
             legalTargets={legalTargets}
             lastMove={lastMove}
@@ -975,11 +978,6 @@ export default function ChessGame({ onExit }: { onExit: () => void }) {
         setShowSettings={setShowSettings}
         mode={mode}
         setMode={setMode}
-        newRoomName={newRoomName}
-        setNewRoomName={setNewRoomName}
-        roomList={roomList}
-        loadRooms={() => socket?.emit("rooms:list")}
-        socket={socket}
         setRoomId={setRoomId}
         resetBoardState={resetBoardState}
         botPlaysWhite={botPlaysWhite}
