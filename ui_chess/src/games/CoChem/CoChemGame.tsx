@@ -1,9 +1,10 @@
-import { MatchHeader } from '@/features/arena/MatchSurface';
+﻿import { MatchHeader } from '@/features/arena/MatchSurface';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Bot, ChevronRight, CircleHelp, Flower2, Leaf, Lightbulb, Pause, Play, RotateCcw, Sparkles, Trophy, Undo2, Users } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import ChemBoard from './ChemBoard';
-import type { Motion } from './ChemBoard';
+import { chemBeats } from './chemMotion';
+import { useBeatReplay } from '../shared/useBeatReplay';
 import { LittleStork, LotusVillage } from './ChemArt';
 import { applyChemMove, chooseChemMove, coordinate, countPieces, forcedMoves, legalMoves, newChemGame } from './engine';
 import type { ChemState, Move } from './engine';
@@ -11,21 +12,19 @@ import './chem.css';
 type Options={mode:'bot'|'local';difficulty:'easy'|'smart';useMo:boolean};
 const defaults:Options={mode:'bot',difficulty:'smart',useMo:true};
 export default function CoChemGame({onExit}:{onExit:()=>void}) {
-  const [state,setState]=useState(()=>newChemGame()),[selected,setSelected]=useState<number|null>(null),[motion,setMotion]=useState<Motion|null>(null);
+  const [state,setState]=useState(()=>newChemGame()),[selected,setSelected]=useState<number|null>(null);
+  const {display,beat,busy,skip}=useBeatReplay(state,chemBeats);
   const [options,setOptions]=useState<Options>(defaults),[draft,setDraft]=useState<Options>(defaults),[settings,setSettings]=useState(false),[rules,setRules]=useState(false),[exit,setExit]=useState(false);
   const [paused,setPaused]=useState(false),[hint,setHint]=useState<Move|null>(null),[undoCount,setUndoCount]=useState(0);
-  const timer=useRef<number|null>(null),locked=useRef(false),history=useRef<ChemState[]>([]);
-  const busy=motion!==null,botTurn=options.mode==='bot'&&state.turn===1,finished=state.winner!==null;
+  const history=useRef<ChemState[]>([]);
+  const botTurn=options.mode==='bot'&&state.turn===1,finished=state.winner!==null;
   const names=['Bạn Lá',options.mode==='bot'?'Chú Cò':'Bạn Sen'],counts=[countPieces(state,0),countPieces(state,1)],forced=forcedMoves(state);
-  const stop=useCallback(()=>{if(timer.current!==null)window.clearTimeout(timer.current);timer.current=null;locked.current=false;},[]);
-  useEffect(()=>()=>stop(),[stop]);
   const play=useCallback((move:Move)=>{
-    if(locked.current||paused||state.winner!==null)return;
-    const next=applyChemMove(state,move);locked.current=true;setHint(null);setSelected(null);
+    if(busy||paused||state.winner!==null)return;
+    const next=applyChemMove(state,move);setHint(null);setSelected(null);
     if(options.mode==='local'||state.turn===0){history.current.push(structuredClone(state));setUndoCount(history.current.length);}
-    setMotion({...move,side:state.turn,arrived:false});
-    timer.current=window.setTimeout(()=>{setMotion({...move,side:state.turn,arrived:true});timer.current=window.setTimeout(()=>{setState(next);setMotion(null);locked.current=false;timer.current=null;},310);},30);
-  },[state,paused,options.mode]);
+    setState(next);
+  },[state,paused,busy,options.mode]);
   useEffect(()=>{
     if(!botTurn||busy||paused||finished||settings||rules||exit)return;
     const id=window.setTimeout(()=>{const move=chooseChemMove(state,options.difficulty);if(move)play(move);},950);
@@ -34,14 +33,14 @@ export default function CoChemGame({onExit}:{onExit:()=>void}) {
   const allowed=!busy&&!botTurn&&!paused&&!finished;
   function onPoint(i:number){if(!allowed)return;const moves=legalMoves(state);if(state.board[i]===state.turn&&moves.some(m=>m.from===i)){setSelected(i);setHint(null);return;}if(selected!==null&&moves.some(m=>m.from===selected&&m.to===i))play({from:selected,to:i});}
   function openSettings(){setDraft({...options});setSettings(true);}
-  function restart(){stop();history.current=[];setUndoCount(0);setState(newChemGame(draft.useMo));setOptions({...draft});setSelected(null);setMotion(null);setHint(null);setPaused(false);setSettings(false);}
-  function undo(){if(busy||!history.current.length)return;setState(history.current.pop()!);setSelected(null);setHint(null);setUndoCount(history.current.length);}
+  function restart(){skip();history.current=[];setUndoCount(0);setState(newChemGame(draft.useMo));setOptions({...draft});setSelected(null);setHint(null);setPaused(false);setSettings(false);}
+  function undo(){if(busy||!history.current.length)return;skip();setState(history.current.pop()!);setSelected(null);setHint(null);setUndoCount(history.current.length);}
   function suggest(){if(!allowed)return;const move=chooseChemMove(state);if(move){setSelected(move.from);setHint(move);}}
   const message=finished?state.reason:paused?'Nghỉ một chút, ngắm sen rồi mình chơi tiếp nhé.':busy?'Quân đang bước sang điểm mới…':botTurn?'Chú Cò đang nghĩ một nước đi thật khéo…':forced.length?`Có thế mở! Hãy đi vào ${coordinate(forced[0].to)} để gánh quân.`:selected!==null?`Đã chọn ${coordinate(selected)}. Chạm một bông hoa để đi đến.`:'Chọn một quân của mình, rồi chạm điểm trống được đánh dấu.';
   return <div className="chem-game"><MatchHeader className="chem-header"><button onClick={()=>{if(state.moves&&!finished)setExit(true);else onExit();}}><ArrowLeft size={16}/><span>Sảnh game</span></button><div className="chem-brand"><span><Flower2 size={21}/></span><strong>SÂN ĐÌNH</strong><small>CỜ DÂN GIAN VIỆT</small></div><div className="chem-header-right"><span>CHƠI MIỄN PHÍ</span><button onClick={()=>setRules(true)} aria-label="Luật chơi cờ chém"><CircleHelp size={19}/></button></div></MatchHeader>
     <main className="chem-layout"><section className="chem-play-column"><div className="chem-title"><div><p><Sparkles size={12}/> ĐẤU TRÍ NHẸ NHÀNG · NIỀM VUI RỘN RÀNG</p><h1>Cờ chém<span>Gánh đôi niềm vui, đổi màu tình bạn.</span></h1></div><button className="chem-new" onClick={openSettings}><RotateCcw size={14}/>Ván mới</button></div>
       <div className="chem-stage"><div className="chem-village"><LotusVillage/><span><Flower2 size={12}/> Một góc sân đình, một ván cờ vui</span></div><div className="chem-player-strip"><div className={state.turn===0&&!finished?'active player-leaf':'player-leaf'}><span><Leaf size={20}/></span><p><strong>{names[0]}</strong><small>Đội Lá · {state.turn===0?'Đang đến lượt':'Đợi một chút nhé'}</small></p><b>{counts[0]}<small>quân</small></b></div><i>✿</i><div className={state.turn===1&&!finished?'active player-lotus':'player-lotus'}><span><Flower2 size={20}/></span><p><strong>{names[1]}</strong><small>Đội Sen · {state.turn===1?'Đang đến lượt':'Đợi một chút nhé'}</small></p><b>{counts[1]}<small>quân</small></b></div></div>
-        <div className="chem-board-wrap"><ChemBoard state={state} selected={selected} disabled={!allowed} motion={motion} hint={hint?.to??null} onPoint={onPoint}/></div>
+        <div className="chem-board-wrap"><ChemBoard state={display} selected={selected} disabled={!allowed} beat={beat} hint={hint?.to??null} onPoint={onPoint}/></div>
         <div className={`chem-message ${forced.length?'has-trap':''}`} role="status"><span>{forced.length?<Sparkles size={18}/>:<Leaf size={18}/>}</span><p>{message}</p></div>
       </div><div className="chem-controls"><button disabled={busy||!undoCount} onClick={undo}><Undo2 size={14}/>Đi lại</button><button disabled={busy||finished} onClick={()=>setPaused(v=>!v)}>{paused?<Play size={14}/>:<Pause size={14}/>} {paused?'Chơi tiếp':'Tạm dừng'}</button><span>Lượt {state.moves+1}</span><span className="chem-rule-chip">{state.useMo?'Có luật mở':'Không luật mở'}</span></div>
     </section><aside className="chem-sidebar"><section className="chem-friend-card"><div><span>NGƯỜI BẠN BÊN AO SEN</span><i>✿</i></div><LittleStork happy={state.converted.length>0}/><h2>Chú Cò mời bạn chơi!</h2><p>Đi một bước thật khéo,<br/>gánh về cả một niềm vui.</p><span className="chem-mode-badge">{options.mode==='bot'?<Bot size={12}/>:<Users size={12}/>} {options.mode==='bot'?'Chơi với Chú Cò':'Hai người cùng thiết bị'}</span></section>
@@ -54,3 +53,4 @@ export default function CoChemGame({onExit}:{onExit:()=>void}) {
     <Dialog open={exit} onOpenChange={setExit}><DialogContent className="chem-dialog"><DialogTitle>Hẹn gặp lại bên ao sen nhé?</DialogTitle><DialogDescription>Ván hiện tại sẽ kết thúc khi rời về sảnh.</DialogDescription><button className="chem-primary" onClick={onExit}>Trở về sảnh</button><button className="chem-hint" onClick={()=>setExit(false)}>Ở lại chơi tiếp</button></DialogContent></Dialog>
   </div>;
 }
+

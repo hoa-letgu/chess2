@@ -1,9 +1,10 @@
 import { MatchHeader } from '@/features/arena/MatchSurface';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpDown, Bot, ChevronRight, CircleHelp, Crown, Flag, Pause, Play, RotateCcw, Shield, Sparkles, Swords, Trophy, Users } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import CheckersBoard, { CheckersDisc, Heraldry } from './CheckersBoard';
-import type { Motion } from './CheckersBoard';
+import { checkersBeats } from './checkersMotion';
+import { useBeatReplay } from '../shared/useBeatReplay';
 import { ARMIES, applyStep, chooseTurn, coord, legalSteps, newCheckers } from './engine';
 import type { CheckersState, Side, Step, Turn } from './engine';
 import './checkers.css';
@@ -11,20 +12,18 @@ type Options = { mode: 'bot' | 'local'; side: Side; level: 'easy' | 'smart' };
 const defaults:Options={mode:'bot',side:0,level:'smart'};
 export default function CheckersGame({onExit}:{onExit:()=>void}){
  const [state,setState]=useState<CheckersState>(()=>newCheckers()),[options,setOptions]=useState<Options>(defaults),[draft,setDraft]=useState<Options>(defaults);
- const [selected,setSelected]=useState<number|null>(null),[motion,setMotion]=useState<Motion|null>(null),[hint,setHint]=useState<Turn|null>(null);
+ const [selected,setSelected]=useState<number|null>(null),[hint,setHint]=useState<Turn|null>(null);
+ const {display,beat,busy,skip}=useBeatReplay(state,checkersBeats);
  const [settings,setSettings]=useState(false),[rules,setRules]=useState(false),[exit,setExit]=useState(false),[resign,setResign]=useState(false),[paused,setPaused]=useState(false),[flip,setFlip]=useState(false);
- const timer=useRef<number|null>(null),lock=useRef(false),steps=useMemo(()=>legalSteps(state),[state]);
- const busy=motion!==null,finished=state.winner!==null,botTurn=options.mode==='bot'&&state.turn!==options.side,blocked=busy||paused||finished||settings||rules||exit||resign,allowed=!blocked&&!botTurn;
+ const steps=useMemo(()=>legalSteps(state),[state]);
+ const finished=state.winner!==null,botTurn=options.mode==='bot'&&state.turn!==options.side,blocked=busy||paused||finished||settings||rules||exit||resign,allowed=!blocked&&!botTurn;
  const mustCapture=steps.some(m=>m.capture!==null),chain=state.chain!==null,army=ARMIES[state.turn];
  const count=(side:Side)=>state.board.filter(p=>p?.side===side).length,kingCount=(side:Side)=>state.board.filter(p=>p?.side===side&&p.king).length;
- const stop=useCallback(()=>{if(timer.current!==null)window.clearTimeout(timer.current);timer.current=null;lock.current=false;},[]);
- useEffect(()=>()=>stop(),[stop]);
  const play=useCallback((step:Step)=>{
-   if(lock.current||paused||state.winner!==null)return;
-   const next=applyStep(state,step.from,step.to),piece=state.board[step.from]!;
-   lock.current=true;setHint(null);setSelected(null);setMotion({step,piece,arrived:false});
-   timer.current=window.setTimeout(()=>{setMotion({step,piece,arrived:true});timer.current=window.setTimeout(()=>{setState(next);setMotion(null);setSelected(next.chain);lock.current=false;timer.current=null;},290);},30);
- },[state,paused]);
+   if(busy||paused||state.winner!==null)return;
+   const next=applyStep(state,step.from,step.to);
+   setHint(null);setState(next);setSelected(next.chain);
+ },[state,paused,busy]);
  useEffect(()=>{
    if(!botTurn||blocked)return;
    const id=window.setTimeout(()=>{const move=chooseTurn(state,options.level);if(move){const step=steps.find(m=>m.from===move.path[0]&&m.to===move.path[1]);if(step)play(step);}},chain?450:850);
@@ -33,11 +32,11 @@ export default function CheckersGame({onExit}:{onExit:()=>void}){
  function select(i:number){if(!allowed)return;if(steps.some(m=>m.from===i)){setSelected(i);setHint(null);return;}const step=steps.find(m=>m.from===selected&&m.to===i);if(step)play(step);}
  function suggest(){if(!allowed)return;const move=chooseTurn(state,options.level);if(move){setSelected(move.path[0]);setHint(move);}}
  function openSettings(){setDraft({...options});setSettings(true);}
- function restart(){stop();setState(newCheckers());setOptions({...draft});setMotion(null);setSelected(null);setHint(null);setPaused(false);setFlip(draft.mode==='bot'&&draft.side===1);setSettings(false);}
+ function restart(){skip();setState(newCheckers());setOptions({...draft});setSelected(null);setHint(null);setPaused(false);setFlip(draft.mode==='bot'&&draft.side===1);setSettings(false);}
  const person=(side:Side)=>options.mode==='bot'?(side===options.side?'Bạn cầm quân':'Đối thủ máy'):`Người chơi ${side+1}`;
  const caption=finished?state.reason:paused?'Chiến tuyến đang tạm dừng.':busy?'Đạo quân đang tiến công…':botTurn?`${army.name} đang tính đường tiến quân…`:chain?`Tiếp tục chuỗi bắt tại ${coord(state.chain!)}. Không được đổi quân hoặc dừng giữa chừng.`:mustCapture?'Có cơ hội ăn quân. Hãy chọn một quân đang sáng để tiến công.':selected!==null?`Đã chọn ${state.board[selected]?.king?'Vua':'quân'} tại ${coord(selected)}. Chọn ô đến.`:`Đến lượt ${army.name}. Chọn quân để xuất trận.`;
  return <div className="ck-game"><MatchHeader className="ck-header"><button onClick={()=>{if((state.ply||state.chain!==null)&&!finished)setExit(true);else onExit();}}><ArrowLeft size={16}/><span>Sảnh game</span></button><div className="ck-brand"><span><Crown size={22}/></span><strong>IRON CROWN<small>WESTERN DRAUGHTS · VIII × VIII</small></strong></div><div className="ck-header-tools"><span>THE CROWN IS EARNED.</span><button onClick={()=>setRules(true)} aria-label="Luật Cờ Đam"><CircleHelp size={18}/></button></div></MatchHeader>
- <main className="ck-main"><div className="ck-page-title"><div><p><Swords size={12}/> THE BATTLE FOR THE CROWN</p><h1>Cờ Đam<span>Định chiến tuyến. Đoạt vương quyền.</span></h1></div><button onClick={openSettings}><RotateCcw size={14}/>Ván mới</button></div><div className="ck-layout"><section className="ck-stage-column"><div className="ck-stage"><div className="ck-stage-banner"><span/><Crown size={23}/><div><strong>THE IRON CROWN</strong><small>TWELVE WARRIORS. ONE THRONE.</small></div><Crown size={23}/><span/></div><div className="ck-players">{([1,0]as Side[]).map(side=><div key={side} className={`ck-player side-${side} ${state.turn===side?'is-turn':''}`}><span><Heraldry side={side}/></span><div><strong>{ARMIES[side].name}<small>{person(side)}</small></strong><p>{count(side)} quân còn lại <i>·</i> {kingCount(side)} Vua</p></div><b>{state.turn===side?'XUẤT TRẬN':'CHỜ LƯỢT'}</b></div>)}</div><div className="ck-board-scene"><CheckersBoard state={state} selected={selected} steps={steps} disabled={!allowed} flip={flip} motion={motion} hint={hint?.path[1]??null} onSquare={select}/></div><div className={`ck-status ${mustCapture?'capture-required':''}`} role="status"><span>{chain?<Swords size={19}/>:<Shield size={19}/>}</span><p>{caption}</p><b>{chain?'COMBO':mustCapture?'ATTACK':'YOUR MOVE'}</b></div></div>
+ <main className="ck-main"><div className="ck-page-title"><div><p><Swords size={12}/> THE BATTLE FOR THE CROWN</p><h1>Cờ Đam<span>Định chiến tuyến. Đoạt vương quyền.</span></h1></div><button onClick={openSettings}><RotateCcw size={14}/>Ván mới</button></div><div className="ck-layout"><section className="ck-stage-column"><div className="ck-stage"><div className="ck-stage-banner"><span/><Crown size={23}/><div><strong>THE IRON CROWN</strong><small>TWELVE WARRIORS. ONE THRONE.</small></div><Crown size={23}/><span/></div><div className="ck-players">{([1,0]as Side[]).map(side=><div key={side} className={`ck-player side-${side} ${state.turn===side?'is-turn':''}`}><span><Heraldry side={side}/></span><div><strong>{ARMIES[side].name}<small>{person(side)}</small></strong><p>{count(side)} quân còn lại <i>·</i> {kingCount(side)} Vua</p></div><b>{state.turn===side?'XUẤT TRẬN':'CHỜ LƯỢT'}</b></div>)}</div><div className="ck-board-scene"><CheckersBoard state={display} selected={selected} steps={steps} disabled={!allowed} flip={flip} beat={beat} hint={hint?.path[1]??null} onSquare={select}/></div><div className={`ck-status ${mustCapture?'capture-required':''}`} role="status"><span>{chain?<Swords size={19}/>:<Shield size={19}/>}</span><p>{caption}</p><b>{chain?'COMBO':mustCapture?'ATTACK':'YOUR MOVE'}</b></div></div>
  <div className="ck-controls"><button disabled={busy} onClick={()=>setFlip(v=>!v)}><ArrowUpDown size={14}/>Đảo bàn</button><button disabled={busy||finished} onClick={()=>setPaused(v=>!v)}>{paused?<Play size={14}/>:<Pause size={14}/>} {paused?'Tiếp tục':'Tạm dừng'}</button><button disabled={!allowed} onClick={()=>setResign(true)}><Flag size={14}/>Đầu hàng</button><span>Nước {state.ply+1}{chain?' · Đang bắt liên hoàn':''}</span></div><div className="ck-legend"><span><i/>Bắt buộc ăn quân</span><span><Swords size={11}/>Hoàn tất chuỗi bắt</span><span><Crown size={11}/>Đến hàng cuối để phong Vua</span></div><section className="ck-journal"><div className="ck-section-title"><h2>Biên niên chiến trận</h2><span>CHRONICLES</span></div><ol aria-live="polite" aria-relevant="additions">{state.logs.slice(0,5).map((line,i)=><li key={`${state.ply}-${i}-${line}`}><i/>{line}</li>)}</ol></section></section>
  <aside className="ck-sidebar"><section className="ck-motto"><div className="ck-section-title"><span>THE ROYAL ARENA</span><Crown size={13}/></div><Heraldry side={state.turn}/><h2>Vương quyền<br/><em>phải giành lấy.</em></h2><p>Bước đi kiên định.<br/>Chiến thắng xứng tầm.</p><span className="ck-mode-badge">{options.mode==='bot'?<Bot size={12}/>:<Users size={12}/>} {options.mode==='bot'?`Đấu máy · ${options.level==='smart'?'Chinh phạt':'Tân binh'}`:'Hai người cùng thiết bị'}</span></section>
  <section className="ck-tactics"><div className="ck-section-title"><h2>Mệnh lệnh chiến trường</h2><Swords size={15}/></div><div className="ck-turn-info"><span><CheckersDisc piece={{side:state.turn,king:false}}/></span><div><strong>{army.name}</strong><small>{person(state.turn)}</small><b>{chain?'TIẾP TỤC ĂN LIÊN HOÀN':mustCapture?'BẮT BUỘC ĂN QUÂN':'ĐẾN LƯỢT TIẾN QUÂN'}</b></div></div><button className="ck-primary" disabled={!allowed} onClick={suggest}><Sparkles size={15}/>Gợi ý chiến thuật<ChevronRight size={15}/></button>{hint&&<div className="ck-hint"><span>{hint.captures.length?'TUYẾN TIẾN CÔNG':'NƯỚC ĐI ĐỀ XUẤT'}</span><strong>{hint.path.map(coord).join(hint.captures.length?' × ':' → ')}</strong><p>{hint.captures.length?`Bắt ${hint.captures.length} quân${hint.crowned?', phong Vua ở cuối tuyến':''}.`:hint.crowned?'Tiến đến hàng cuối để phong Vua.':'Chọn ô sáng trên bàn để thực hiện.'}</p></div>}<p className="ck-tactic-note">{chain?`Đã bắt ${state.taken.length} quân trong lượt này. Tiếp tục bằng quân tại ${coord(state.chain!)}.`:'Luật Đam Anh 8×8 · Quân thường không ăn lùi.'}</p></section>

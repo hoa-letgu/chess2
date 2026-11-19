@@ -1,77 +1,95 @@
 import { BoardSurface } from '@/features/arena/MatchSurface';
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { ArrowUpRight, Building2, Flag, HandCoins, Landmark, Leaf, LockKeyhole, Sparkles, TrainFront, Zap, Settings, Volume2, VolumeX, Star, Users, Hammer, Banknote, ArrowRight, CircleHelp } from 'lucide-react';
+import { ArrowRight, Banknote, Building2, Car, CircleHelp, Crown, Dog, Flag, Hammer, Landmark, Leaf, LockKeyhole, Rocket, Settings, Sparkles, TrainFront, Volume2, VolumeX, Zap, ArrowDownToLine } from 'lucide-react';
 import type { TycoonBeat } from './tycoon-motion';
-import { BOARD, CARDS, GROUPS, TOKENS, money, ownsGroup, canBuild, canSell, canDowngrade } from './engine';
+import { BOARD, CARDS, GROUPS, TOKENS, money, ownsGroup, canBuild, canSell, canDowngrade, rentAt } from './engine';
 import type { EmpireState, TileKind, Action } from './engine';
 export type Travel = { player: number; position: number };
 export function TokenIcon({id,size=18}:{id:number;size?:number}) { return <span aria-hidden="true" className="emp-chibi" style={{width:size*1.8,height:size*1.8,backgroundPosition:`${id%2*100}% ${Math.floor(id/2)*100}%`}}/>; }
 export function TileIcon({kind,size=18}:{kind:TileKind;size?:number}) { const Icon = kind==='rail'?TrainFront:kind==='utility'?Zap:kind==='chance'?Sparkles:kind==='tax'?Landmark:kind==='start'?Flag:kind==='jail'||kind==='goJail'?LockKeyhole:kind==='park'?Leaf:Building2;return <Icon size={size}/>; }
-export function Skyline(){return <svg className="emp-skyline" viewBox="0 0 700 350" fill="none" aria-hidden="true"><defs><linearGradient id="emp-tower" x1="0" y1="0" x2="0.6" y2="1"><stop stopColor="#397888"/><stop offset="1" stopColor="#142d42"/></linearGradient><linearGradient id="emp-beam" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#80ead7" stopOpacity=".5"/><stop offset="1" stopColor="#80ead7" stopOpacity="0"/></linearGradient><pattern id="emp-windows" width="14" height="17" patternUnits="userSpaceOnUse"><rect x="4" y="5" width="3" height="5" fill="#8ae7d0" opacity=".42"/></pattern></defs><ellipse cx="350" cy="303" rx="280" ry="27" fill="#65dcb5" opacity=".08"/><path d="M80 280V142h46v-28h39v166m18 0V82h57v198m12 0V175h45v105m15 0V60h22V38h10V8h3v30h10v22h22v220m16 0V127h28v-21h24v21h26v153m12 0V94l18-36v-8h5v8l18 36v186m15 0V173h63v107m13 0V142h35v-30h31v168" fill="url(#emp-tower)"/><path d="M94 280V156h58v124m43 0V94h33v186m95 0V72h45v208m45 0V142h49v138m27 0V105h25v175m28 0V185h38v95m38 0V158h39v122" fill="url(#emp-windows)"/><path d="M296 281V110h24V63h30v47h25v171M456 282V132l27-43 27 43v150" stroke="#a0eee0" strokeOpacity=".24"/><path d="M196 87h40m-36 8h32m79-32h59m99 49h29" stroke="#aceedc" strokeOpacity=".5"/><path d="M337 0 290 282h94Z" fill="url(#emp-beam)" opacity=".15"/><path d="M40 283H660" stroke="#76c9bb" strokeOpacity=".25"/><path d="m120 320 230-38 230 38-230 20Z" fill="#3a7a7944"/><path d="m120 320 230-38 230 38-230 20Z" stroke="#73d9be55"/><path d="m200 318 150-26 150 26m-210 14 60-40 60 40" stroke="#6fd2bc33"/><g fill="#c2ecda"><circle cx="117" cy="60" r="1.5"/><circle cx="250" cy="30" r="1"/><circle cx="525" cy="45" r="1.5"/><circle cx="586" cy="91" r="1"/></g></svg>;}
-export function Dice({value,rolling}:{value:number;rolling:boolean}){
+const PIECES={car:Car,rocket:Rocket,dog:Dog,crown:Crown} as const;
+function Piece({id}:{id:number}){const Icon=PIECES[TOKENS[id].symbol as keyof typeof PIECES];return <Icon aria-hidden="true"/>;}
+const pieceStyle=(id:number)=>({'--c':TOKENS[id].color}as CSSProperties);
+function Die({value,rolling}:{value:number;rolling:boolean}){
  const pips:Record<number,number[]>={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
- return <div className={`emp-die ${rolling?'rolling':''}`} role="img" aria-label={`Xúc xắc ${value} điểm`}>{Array.from({length:9},(_,i)=><i key={i} className={pips[value].includes(i)?'pip':''}/>)}</div>;
+ return <div className={`fb-die ${rolling?'rolling':''}`} role="img" aria-label={`Xúc xắc ${value} điểm`}>{Array.from({length:9},(_,i)=><i key={i} className={pips[value].includes(i)?'pip':''}/>)}</div>;
 }
 function boardCell(index:number):[number,number]{
  if(index<=8)return [9,9-index];if(index<=16)return [17-index,1];if(index<=24)return [1,index-15];return [index-23,9];
 }
+const tileNote=(t:typeof BOARD[number])=>t.kind==='city'||t.kind==='rail'||t.kind==='utility'?money(t.price):t.kind==='tax'?`−${money(t.price)}`:t.kind==='start'?'+$200':t.kind==='park'?'+$40':t.kind==='jail'?'Thăm tù':t.kind==='goJail'?'Vào tù':'';
 export default function EmpireBoard({state,travel,selected,onSelect,faces,rolling,beat,onRoll,canRoll=false,onAction,canAct=false,onSettings,onRules}:{onAction?:(action:Action)=>void;canAct?:boolean;onSettings?:()=>void;onRules?:()=>void;onRoll?:()=>void;canRoll?:boolean;beat?:TycoonBeat|null;state:EmpireState;travel:Travel|null;selected:number;onSelect:(i:number)=>void;faces:[number,number];rolling:boolean}){
- const [showEffects,setShowEffects]=useState(()=>window.innerWidth>900),[showPlayers,setShowPlayers]=useState(true),[showCard,setShowCard]=useState(false);
- const [sound,setSound]=useState(false),audio=useRef<AudioContext|null>(null);
+ const [showCard,setShowCard]=useState(false),[sound,setSound]=useState(false),audio=useRef<AudioContext|null>(null);
  useEffect(()=>{if(!sound||!beat||!audio.current)return;const ctx=audio.current,osc=ctx.createOscillator(),gain=ctx.createGain();osc.connect(gain);gain.connect(ctx.destination);osc.type='sine';osc.frequency.setValueAtTime(beat.kind==='hop'?520:beat.kind==='dice'?210:740,ctx.currentTime);osc.frequency.exponentialRampToValueAtTime(beat.kind==='hop'?320:480,ctx.currentTime+.09);gain.gain.setValueAtTime(.035,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.12);osc.start();osc.stop(ctx.currentTime+.13);},[beat,sound]);
  useEffect(()=>()=>{void audio.current?.close();},[]);
- return <BoardSurface className={`emp-board-shell emp-isometric ${showEffects?'with-effects':''} ${showPlayers?'with-players':''}`}>
-  <div className="emp-scene-logo"><span>♛</span><strong>Cờ Tỷ Phú</strong><i>⚄</i></div>
-  <div className="emp-scene-tools">
-   {onSettings&&<button onClick={onSettings}><Settings/><span>Cài đặt</span></button>}
-   <button aria-pressed={sound} aria-label={sound?'Tắt âm thanh':'Bật âm thanh'} onClick={()=>{if(!sound){audio.current??=new AudioContext();void audio.current.resume();}setSound(!sound);}}>{sound?<Volume2/>:<VolumeX/>}<span>Âm thanh</span></button>
-   <button aria-pressed={showPlayers} onClick={()=>setShowPlayers(!showPlayers)}><Users/><span>Người chơi</span></button>
-   <button aria-pressed={showEffects} onClick={()=>setShowEffects(!showEffects)}><Star/><span>Hiệu ứng</span></button>
-   {onRules&&<button onClick={onRules}><CircleHelp/><span>Luật chơi</span></button>}
-  </div><div className="emp-board" data-tycoon-phase={beat?.kind??'idle'} role="group" aria-label="Bàn Cờ tỷ phú hình thoi 32 ô">
-  <span className="emp-scene-asset emp-scene-prop prop-hotel sprite-1" aria-hidden="true"/><span className="emp-scene-asset emp-scene-prop prop-house sprite-0" aria-hidden="true"/><span className="emp-scene-asset emp-scene-prop prop-shop sprite-2" aria-hidden="true"/><span className="emp-scene-asset emp-scene-prop prop-chest sprite-4" aria-hidden="true"/><div className="emp-board-center">
-   <div className="emp-market">✦ WONDER CITY <span>Vòng {state.round}/{state.maxRounds}</span></div>
-   <div className="emp-center-copy"><span>CHUYẾN PHIÊU LƯU TỶ PHÚ</span><h2>Cờ Tỷ Phú</h2><p>Mua phố nhỏ · Xây ước mơ lớn</p></div>
-   <div className="emp-city-scenery"><Skyline/></div>
-   <div className="emp-hero-character"><TokenIcon id={state.turn} size={70}/></div>
-   <div className="emp-center-bottom"><div className="emp-city-card"><Sparkles/><span>THẺ<br/><strong>CƠ HỘI</strong></span></div><button type="button" className="emp-roll-control" aria-label="Gieo hai xúc xắc" disabled={!canRoll} onClick={onRoll}><span className="emp-dice-pair"><Dice value={faces[0]} rolling={rolling}/><Dice value={faces[1]} rolling={rolling}/></span><strong>{rolling?'Đang tung…':'Xúc xắc'}</strong></button><div className="emp-center-round"><small>TỔNG ĐIỂM</small><strong>{faces[0]+faces[1]}</strong></div></div>
-   <div className="emp-center-caption"><HandCoins size={12}/><span>Qua Xuất phát +$200 · Tiền riêng trong ván</span></div>
-   {(beat?.kind==='card'||showCard)&&state.lastCard!==null&&<div className="emp-mystery" key={state.revision} onClick={()=>setShowCard(false)}><span>✦ THẺ CƠ HỘI ✦</span><strong>{CARDS[state.lastCard].title}</strong><p>{CARDS[state.lastCard].text}</p></div>}
-   {beat?.kind==='jail'&&<div className="emp-jail-overlay">☁<span>▥</span><strong>Tạm nghỉ một lượt!</strong></div>}
-   {beat?.kind==='win'&&<div className="emp-celebration">🏆<strong>{state.winners.map(id=>state.players[id].name).join(' & ')} chiến thắng!</strong>{Array.from({length:20},(_,i)=><i key={i} style={{'--i':i}as CSSProperties}>✦</i>)}</div>}
-   <div className="emp-mini-players">{state.players.map((player,rank)=><div key={player.id} className={`${player.id===state.turn?'current':''} ${!player.alive?'bankrupt':''}`}><small className="emp-rank">{rank+1}</small><TokenIcon id={player.id} size={17}/><span>{player.name}<b><AnimatedCash value={player.cash}/></b></span>{beat?.delta?.[player.id]?Array.from({length:4},(_,i)=><i key={`${state.revision}-${i}`} className="emp-coin-flight" style={{'--i':i}as CSSProperties}>🪙</i>):null}{beat?.delta?.[player.id]?<em className={beat.delta[player.id]>0?'gain':'loss'} key={state.revision}>{beat.delta[player.id]>0?'🪙 +':'☁ −'}{money(Math.abs(beat.delta[player.id]))}</em>:null}</div>)}</div>
+ const me=state.players[state.turn],tile=BOARD[selected],asset=state.assets[selected],landed=BOARD[me.position];
+ const why=(ok:boolean,fn:()=>string)=>!canAct?'Chưa đến lượt':ok?'':fn();
+ const mine=!!asset&&asset.owner===state.turn,managing=state.phase==='manage'||state.phase==='debt';
+ const buyWhy=why(state.phase==='buy'&&me.cash>=landed.price,()=>state.phase!=='buy'?'Không có đất để mua':'Không đủ tiền');
+ const buildWhy=why(canBuild(state,selected),()=>!mine?'Chọn ô của bạn':tile.kind!=='city'?'Chỉ xây ở ô phố':state.phase!=='manage'?'Xây sau khi xử lý ô':asset!.level>=3?'Đã xây tối đa':!ownsGroup(state,state.turn,selected)?'Cần đủ bộ màu':me.cash<tile.fee?'Không đủ tiền':'Xây đều các ô');
+ const downWhy=why(canDowngrade(state,selected),()=>!mine?'Chọn ô của bạn':asset!.level===0?'Ô chưa có nhà':!managing?'Chưa đến lúc quản lý':'Bán nhà cao nhất trước');
+ const sellWhy=why(canSell(state,selected),()=>!mine?'Chọn ô của bạn':asset!.level>0?'Bán hết nhà trước':!managing?'Chưa đến lúc quản lý':'Bán hết nhà cả cặp trước');
+ const endWhy=why(state.phase==='manage'||state.phase==='buy',()=>state.phase==='roll'?'Tung xúc xắc trước':'Cần xử lý nợ');
+ const rollWhy=rolling?'Đang tung…':canRoll?'':state.phase!=='roll'?'Đã tung rồi':'Chưa đến lượt';
+ const cardWhy=state.lastCard===null?'Chưa có thẻ':'';
+ const Act=({why:w,onClick,icon,label}:{why:string;onClick:()=>void;icon:React.ReactNode;label:string})=><button type="button" className="fb-act" disabled={!!w} title={w||label} onClick={onClick}>{icon}<span>{label}</span>{w&&<small>{w}</small>}</button>;
+ const rent=asset?rentAt(state,selected):tile.kind==='city'?tile.rent:0;
+ return <BoardSurface className="emp-board-shell emp-flat">
+  <div className="fb-layout">
+   <div className="fb-top"><span className="emp-scene-asset sprite-5 fb-mascot" aria-hidden="true"/><strong className="fb-logo">Cờ Tỷ Phú</strong><span className="fb-round">Vòng {state.round}/{state.maxRounds}</span>
+    <div className="fb-tools">
+     {onSettings&&<button type="button" onClick={onSettings} aria-label="Cài đặt" title="Cài đặt"><Settings/></button>}
+     <button type="button" aria-pressed={sound} aria-label={sound?'Tắt âm thanh':'Bật âm thanh'} title="Âm thanh" onClick={()=>{if(!sound){audio.current??=new AudioContext();void audio.current.resume();}setSound(!sound);}}>{sound?<Volume2/>:<VolumeX/>}</button>
+     {onRules&&<button type="button" onClick={onRules} aria-label="Luật chơi" title="Luật chơi"><CircleHelp/></button>}
+    </div></div>
+   <div className="fb-players">{state.players.map(p=><div key={p.id} className={`fb-player ${p.id===state.turn?'current':''} ${!p.alive?'out':''}`} style={pieceStyle(p.id)}>
+    <span className="fb-piece"><Piece id={p.id}/></span>
+    <div><strong>{p.name}{p.id===state.turn&&state.phase!=='finished'?<em> · đang đi</em>:''}{!p.alive?<em> · phá sản</em>:''}</strong><b><AnimatedCash value={p.cash}/></b>
+     {beat?.delta?.[p.id]?<i key={state.revision} className={`fb-delta ${beat.delta[p.id]>0?'gain':'loss'}`}>{beat.delta[p.id]>0?'+':'−'}{money(Math.abs(beat.delta[p.id]))}</i>:null}</div>
+    <small>{TOKENS[p.id].name} · {state.assets.filter(a=>a?.owner===p.id).length} ô</small></div>)}</div>
+   <div className="fb-board" data-tycoon-phase={beat?.kind??'idle'} role="group" aria-label="Bàn Cờ tỷ phú 32 ô">
+    <div className="fb-center">
+     <div className="fb-title">Cờ Tỷ Phú</div>
+     <div className="fb-dice"><Die value={faces[0]} rolling={rolling}/><Die value={faces[1]} rolling={rolling}/></div>
+     <div className="fb-sum" aria-live="polite">{rolling?'Đang tung…':state.rolls>0?`${faces[0]} + ${faces[1]} = ${faces[0]+faces[1]}`:'Hãy tung xúc xắc'}</div>
+     <button type="button" className="fb-roll" aria-label="Gieo hai xúc xắc" disabled={!canRoll} onClick={onRoll}>Tung xúc xắc{rollWhy&&<small>{rollWhy}</small>}</button>
+     <div className="fb-sub">Qua Xuất phát +$200 · Tiền riêng trong ván</div>
+    </div>
+    {(beat?.kind==='card'||showCard)&&state.lastCard!==null&&<div className="fb-overlay" key={state.revision} onClick={()=>setShowCard(false)}><span>THẺ CƠ HỘI</span><strong>{CARDS[state.lastCard].title}</strong><p>{CARDS[state.lastCard].text}</p></div>}
+    {beat?.kind==='jail'&&<div className="fb-overlay"><LockKeyhole size={40}/><strong>Tạm nghỉ một lượt!</strong></div>}
+    {beat?.kind==='win'&&<div className="fb-overlay">🏆<strong>{state.winners.map(id=>state.players[id].name).join(' & ')} chiến thắng!</strong></div>}
+    {BOARD.map((t,i)=>{
+     const [row,column]=boardCell(i),a=state.assets[i],people=state.players.filter(p=>p.alive&&(travel?.player===p.id?travel.position:p.position)===i),side=i%8===0?'corner':i<8?'b':i<16?'l':i<24?'t':'r';
+     return <button key={i} data-tycoon-tile={i} type="button" className={`fb-tile kind-${t.kind} side-${side} ${a&&ownsGroup(state,a.owner,i)?'complete-set':''} ${beat?.tile===i?'fb-pop':''} ${selected===i?'is-inspected':''} ${people.some(p=>p.id===state.turn)?'has-turn':''}`} style={{gridRow:row,gridColumn:column,'--district':t.group>=0?GROUPS[t.group].color:'transparent','--owner':a?TOKENS[a.owner].color:'transparent'}as CSSProperties} onClick={()=>onSelect(i)} aria-label={`Ô ${i}: ${t.name}${t.price?`, ${money(t.price)}`:''}${a?`, của ${state.players[a.owner].name}, cấp ${a.level}`:['city','rail','utility'].includes(t.kind)?', chưa có chủ':''}${people.length?`, ${people.map(p=>p.name).join(', ')} đang ở đây`:''}`} aria-pressed={selected===i}>
+      {t.kind==='city'&&<span className="fb-band">{a&&a.level>=3?<Building2 className="fb-hotel"/>:a?Array.from({length:a.level},(_,h)=><i className="fb-house" key={h}/>):null}</span>}
+      <span className="fb-body">{t.kind==='chance'?<b className="fb-q">?</b>:t.kind!=='city'&&<TileIcon kind={t.kind}/>}<strong>{t.name}</strong><small>{tileNote(t)}</small></span>
+      {a&&<span className="fb-ownerbar" aria-hidden="true"/>}
+      <span className="fb-tokens">{people.map(p=><span key={p.id} data-tycoon-player={p.id} className={`fb-token ${beat?.kind==='hop'&&beat.actor===p.id?'hopping':''} ${p.jailed?'jailed':''} ${p.id===state.turn?'active':''}`} style={pieceStyle(p.id)} title={p.name}><Piece id={p.id}/></span>)}</span>
+     </button>;
+    })}
+   </div>
+   <div className="fb-side">
+    <section className="fb-card fb-info" style={{'--district':tile.group>=0?GROUPS[tile.group].color:'#b9a8cc'}as CSSProperties}>
+     <h3>{tile.name}</h3><small>{tile.group>=0?GROUPS[tile.group].name:tile.tag}</small>
+     {tile.kind==='city'||tile.kind==='rail'||tile.kind==='utility'?<dl>
+      <div><dt>Giá mua</dt><dd>{money(tile.price)}</dd></div>
+      <div><dt>{asset?'Tiền thuê':'Thuê cơ bản'}</dt><dd>{tile.kind==='utility'&&!asset?'4× xúc xắc':money(tile.kind==='rail'&&!asset?25:rent)}</dd></div>
+      <div><dt>Chủ sở hữu</dt><dd>{asset?<><span className="fb-dot" style={{background:TOKENS[asset.owner].color}}/>{state.players[asset.owner].name}</>:'Chưa có chủ'}</dd></div>
+      {tile.kind==='city'&&<div><dt>Nhà</dt><dd>{asset?.level??0} / 3 · xây {money(tile.fee)}</dd></div>}
+     </dl>:<p>{tileNote(tile)||'Ô đặc biệt'}</p>}
+    </section>
+    <section className="fb-card fb-log"><h3>Nhật ký lượt</h3><ol aria-live="polite">{state.logs.slice(0,6).map((l,i)=><li key={`${state.rolls}-${i}-${l}`}>{l}</li>)}</ol></section>
+   </div>
+   <div className="fb-dock">
+    <Act why={buyWhy} icon={<Banknote/>} label="Mua đất" onClick={()=>onAction?.({type:'buy'})}/>
+    <Act why={buildWhy} icon={<Hammer/>} label="Xây nhà" onClick={()=>onAction?.({type:'build',tile:selected})}/>
+    <Act why={downWhy} icon={<ArrowDownToLine/>} label="Bán nhà" onClick={()=>onAction?.({type:'downgrade',tile:selected})}/>
+    <Act why={sellWhy} icon={<Banknote/>} label="Bán đất" onClick={()=>onAction?.({type:'sell',tile:selected})}/>
+    <Act why={cardWhy} icon={<Sparkles/>} label="Thẻ cơ hội" onClick={()=>setShowCard(!showCard)}/>
+    <Act why={endWhy} icon={<ArrowRight/>} label={state.phase==='buy'?'Bỏ qua':'Hết lượt'} onClick={()=>onAction?.({type:state.phase==='buy'?'pass':'end'})}/>
+   </div>
   </div>
-  {BOARD.map((tile,i)=>{
-   const [row,column]=boardCell(i),a=state.assets[i],people=state.players.filter(p=>p.alive&&(travel?.player===p.id?travel.position:p.position)===i),color=tile.group>=0?GROUPS[tile.group].color:tile.kind==='chance'?'#d6b46e':'#8aabc0';
-   return <button key={i} data-tycoon-tile={i} type="button" className={`emp-tile tile-${tile.kind} ${a&&ownsGroup(state,a.owner,i)?'complete-set':''} ${beat?.tile===i?'emp-property-pop':''} ${i%8===0?'is-corner':''} ${selected===i?'is-inspected':''} ${people.some(p=>p.id===state.turn)?'has-turn':''}`} style={{left:`${50+(column-row)*5.25}%`,top:`${48+(column+row-10)*3.75}%`,zIndex:Math.round(20+(column+row)*2),'--district':color,'--owner':a?TOKENS[a.owner].color:'transparent'}as CSSProperties} onClick={()=>onSelect(i)} aria-label={`Ô ${i}: ${tile.name}${tile.price?`, ${money(tile.price)}`:''}${a?`, của ${state.players[a.owner].name}, cấp ${a.level}`:['city','rail','utility'].includes(tile.kind)?', chưa có chủ':''}${people.length?`, ${people.map(p=>p.name).join(', ')} đang ở đây`:''}`} aria-pressed={selected===i}>
-    <svg className="emp-iso-block" viewBox="0 0 120 100" aria-hidden="true"><path className="emp-block-depth" d="M2 40 Q2 34 10 30 L52 8 Q60 4 68 8 L110 30 Q118 34 118 40 L118 60 Q118 65 110 70 L68 94 Q60 98 52 94 L10 70 Q2 65 2 60Z"/><path className="emp-block-top" d="M8 32 L52 7 Q60 3 68 7 L112 32 Q120 37 112 43 L68 69 Q60 74 52 69 L8 43 Q0 37 8 32Z"/></svg>
-    {(tile.kind==='jail'||tile.kind==='goJail'||(a&&a.level>0))&&<span className={`emp-scene-asset emp-building sprite-${tile.kind==='jail'||tile.kind==='goJail'?3:a!.level>=3?1:0}`} aria-hidden="true"/>}
-    {tile.kind==='city'?<span className="emp-district-bar">{a&&a.level>0&&Array.from({length:a.level},(_,h)=><span className="emp-mini-house" key={h}><i/><b/></span>)}</span>:<span className="emp-tile-icon"><TileIcon kind={tile.kind}/></span>}
-    <strong>{tile.name}</strong><small>{tile.kind==='city'?money(tile.price):tile.kind==='tax'?`−${money(tile.price)}`:tile.kind==='start'?'+$200':tile.kind==='park'?'+$40':tile.kind==='rail'||tile.kind==='utility'?money(tile.price):tile.tag}</small>
-    {a&&<span className="emp-owner-mark" aria-hidden="true">⚑</span>}<span className="emp-tile-tokens">{people.map(p=><span key={p.id} data-tycoon-player={p.id} className={`emp-token ${beat?.kind==='hop'&&beat.actor===p.id?'hopping':''} ${p.jailed?'jailed':''} ${p.id===state.turn?'active':''}`} style={{'--token':TOKENS[p.id].color}as CSSProperties} title={p.name}><TokenIcon id={p.id}/></span>)}</span>{tile.kind==='start'&&<ArrowUpRight className="emp-start-arrow"/>}
-   </button>;
-  })}
- </div>
- <span className="emp-scene-asset emp-mascot sprite-5" aria-hidden="true"/>
- {showEffects&&<aside className="emp-effects-gallery"><h2>⭐ Hiệu ứng nổi bật ⭐</h2>{[
-  ['dice','Xúc xắc','Xoay, nảy và phát sáng khi gieo.'],
-  ['chibi','Di chuyển','Nhân vật nhảy từng ô, để lại ánh sao dễ thương.'],
-  ['1','Mua đất','Cắm cờ sở hữu và tỏa sáng khi mua thành công.'],
-  ['0','Xây nhà / Nâng cấp','Ngôi nhà mọc lên theo từng cấp.'],
-  ['card','Thẻ cơ hội','Lật thẻ để nhận tiền, di chuyển hoặc vào tù.'],
-  ['3','Vào tù','Song sắt hạ xuống, nghỉ chân một lượt.'],
-  ['4','Chiến thắng','Cúp vàng, hoa giấy và bảng xếp hạng.'],
- ].map(([sprite,title,description])=><div key={title}><span className="emp-effect-art">{sprite==='dice'?<><Dice value={5} rolling={false}/><Dice value={3} rolling={false}/></>:sprite==='chibi'?<TokenIcon id={1} size={55}/>:sprite==='card'?<b>?</b>:<i className={`emp-scene-asset sprite-${sprite}`}/>}</span><span><strong>{title}</strong><p>{description}</p></span></div>)}</aside>}
- <div className="emp-scene-dock">
-  <button disabled={!canAct||state.phase!=='buy'||state.players[state.turn].cash<BOARD[state.players[state.turn].position].price} onClick={()=>onAction?.({type:'buy'})}><Banknote/><span>Mua đất</span></button>
-  <button disabled={!canAct||!canBuild(state,selected)} onClick={()=>onAction?.({type:'build',tile:selected})}><Hammer/><span>Xây nhà</span></button>
-  <button disabled={!canAct||!canDowngrade(state,selected)} onClick={()=>onAction?.({type:'downgrade',tile:selected})}><ArrowUpRight/><span>Bán nhà</span></button>
-  <button className="emp-main-roll" disabled={!canRoll} onClick={onRoll} aria-label="Tung xúc xắc trên thanh công cụ"><Dice value={faces[0]} rolling={rolling}/><strong>Xúc xắc</strong></button>
-  <button disabled={!canAct||!canSell(state,selected)} onClick={()=>onAction?.({type:'sell',tile:selected})}><Banknote/><span>Bán đất</span></button>
-  <button disabled={state.lastCard===null} onClick={()=>setShowCard(!showCard)}><Sparkles/><span>Thẻ cơ hội</span></button>
-  <button disabled={!canAct||!['manage','buy'].includes(state.phase)} onClick={()=>onAction?.({type:state.phase==='buy'?'pass':'end'})}><ArrowRight/><span>{state.phase==='buy'?'Bỏ qua':'Hết lượt'}</span></button>
- </div>
  </BoardSurface>;
 }
 

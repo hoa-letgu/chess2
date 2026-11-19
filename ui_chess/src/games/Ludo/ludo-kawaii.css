@@ -1,0 +1,49 @@
+/* Kawaii pastel board + horse effects. Loaded after ludo.css. */
+.lk-surface{background:linear-gradient(160deg,#ffd9ec,#d9f3ea 55%,#e6dcff)!important;border:3px solid #fff!important;border-radius:28px!important;box-shadow:0 10px 30px #8d6aa844!important}
+.lk-wrap{position:relative;width:100%;max-width:min(100%,calc(100vh - 140px));margin:0 auto}
+.lk-svg{display:block;width:100%;height:auto;border-radius:26px}
+.lk-token{transition:transform .14s ease-out;cursor:default}
+.lk-token.is-playable{cursor:pointer}
+.lk-token:focus-visible{outline:none}.lk-token:focus-visible .lk-halo{stroke:#ff3d7f;stroke-width:4}
+.lk-halo{animation:lk-pulse 1s ease-in-out infinite}
+@keyframes lk-pulse{50%{transform:scale(1.18);fill-opacity:.15}}
+.lk-bob{transform-box:fill-box;transform-origin:50% 100%}
+.lk-bob.idle{animation:lk-idle 1.6s ease-in-out infinite}
+@keyframes lk-idle{50%{transform:translateY(-2px) rotate(2deg)}}
+.lk-bob.hop{animation:lk-hop .15s ease-out}
+@keyframes lk-hop{0%{transform:translateY(0) scale(1.08,.9)}50%{transform:translateY(-14px) scale(.95,1.08)}100%{transform:translateY(0) scale(1)}}
+.is-exit .lk-bob{animation:lk-exit .65s cubic-bezier(.2,1.4,.4,1)}
+@keyframes lk-exit{0%{transform:scale(.6) translateY(0)}35%{transform:translateY(-20px) rotate(-10deg) scale(1.1)}60%{transform:translateY(-8px) rotate(8deg)}100%{transform:none}}
+.is-kicked .lk-bob{animation:lk-kicked .8s ease-in forwards .3s}
+@keyframes lk-kicked{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(var(--dx),var(--dy)) rotate(720deg) scale(.9)}}
+.lk-boom{font-size:30px;font-weight:900;fill:#ff3d7f;stroke:#fff;stroke-width:6px;paint-order:stroke;animation:lk-boom .8s ease-out forwards}
+@keyframes lk-boom{0%{transform:scale(.3);opacity:0}25%{transform:scale(1.3);opacity:1}100%{transform:translateY(-14px) scale(1);opacity:0}}
+.lk-lane.rainbow{animation:lk-lane .45s ease-out both}
+@keyframes lk-lane{50%{filter:brightness(1.6) drop-shadow(0 0 5px #fff)}}
+.lk-crown{animation:lk-crown .7s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes lk-crown{from{transform:translateY(-30px) scale(.3);opacity:0}}
+.lk-die{width:72px;height:72px;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:11px;gap:3px;background:#fff;border:3px solid #fff;border-radius:18px;box-shadow:0 5px 0 #d5c2ee,0 8px 14px #8d6aa844}
+.lk-die i{border-radius:50%}.lk-die i.pip{background:#ff6b9a}
+.lk-die.rolling{animation:lk-roll .9s ease-in-out}
+@keyframes lk-roll{0%{transform:translateY(0) rotate(0)}25%{transform:translateY(-24px) rotate(160deg)}50%{transform:translateY(0) rotate(300deg)}70%{transform:translateY(-10px) rotate(380deg)}100%{transform:translateY(0) rotate(360deg)}}
+.lk-die.landed i.pip{box-shadow:0 0 6px #ff9ec0}
+.lk-win{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#fff6fbd9;border-radius:26px;color:#6b3c8c;text-align:center}
+.lk-win strong{font-size:clamp(18px,4vw,28px)}
+.lk-win button{padding:6px 16px;border:2px solid #b78ad8;border-radius:99px;background:#fff;color:#6b3c8c;font-weight:800;cursor:pointer}
+.lk-dancers{display:flex;gap:6px}.lk-dancers span{width:15%;min-width:50px;animation:lk-dance .5s ease-in-out infinite alternate}
+.lk-dancers svg{width:100%;height:auto}
+@keyframes lk-dance{from{transform:translateY(0) rotate(-8deg)}to{transform:translateY(-14px) rotate(8deg)}}
+.lk-fireworks i{position:absolute;left:50%;top:40%;font-style:normal;color:#ffb300;font-size:22px;animation:lk-fw 1.6s ease-out infinite;animation-delay:calc(var(--i)*90ms);transform:rotate(calc(var(--i)*26deg)) translateY(0)}
+@keyframes lk-fw{to{transform:rotate(calc(var(--i)*26deg)) translateY(-150px) scale(.4);opacity:0}}
+/* Kawaii side panels (offline) */
+.ludo-game.lk-game{background:linear-gradient(160deg,#fff0f7,#e8f7f0 55%,#efe8ff)!important;color:#4a2d63}
+.offline-arena .ludo-game.lk-game :is(.ludo-players-panel,.ludo-dice-panel,.ludo-activity){background:#ffffffcc!important;border:2px solid #fff!important;border-radius:20px!important;color:#4a2d63;box-shadow:0 4px 14px #8d6aa822}
+.offline-arena .ludo-game.lk-game :is(.ludo-stage){background:transparent!important;border:0!important;box-shadow:none!important}
+.offline-arena .ludo-game.lk-game :is(.ludo-panel-heading,.ludo-title-row h1,.ludo-turn-strip,.ludo-dice-caption,.ludo-player-name strong){color:#6b3c8c!important}
+.offline-arena .ludo-game.lk-game .ludo-turn-strip{background:#fff!important;border-color:#f0dcff!important}
+.offline-arena .ludo-game.lk-game .ludo-roll-button{background:linear-gradient(#ffb3d1,#ff7fb0)!important;color:#fff!important;border:2px solid #fff!important;border-radius:99px!important;box-shadow:0 4px 0 #d95a8e}
+.offline-arena .ludo-game.lk-game .ludo-roll-button:disabled{background:#d9cfe6!important;box-shadow:0 4px 0 #b9acc9;color:#7d6c93!important}
+.lk-dice-area{display:flex;justify-content:center;padding:10px 0}
+.lk-sum{text-align:center;font-weight:800;font-size:18px;margin:2px 0 6px}
+.lk-skip{margin:6px auto 0;display:block}
+@media(prefers-reduced-motion:reduce){.lk-wrap *{animation:none!important;transition:none!important}}

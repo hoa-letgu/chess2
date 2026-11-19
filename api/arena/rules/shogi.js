@@ -1,4 +1,4 @@
-// Generated from Shogi/engine.ts. SHA256: 5e761f1500d83737dc49f42c04d642e7505b88fc39b3dc6876df2b8901b6ebb9
+// Generated from Shogi/engine.ts. SHA256: 93d1f3f24713d5a3a6eb7fdd1877c3c3e537e820d33e1812ac48576171933da1
                          
                                                                  
                                           

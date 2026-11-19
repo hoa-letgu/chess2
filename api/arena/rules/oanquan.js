@@ -1,8 +1,8 @@
 // Generated from OAnQuan/engine.ts. SHA256: 397ebaec971bdb17ff4e3f0f51ea4a690393887f5c9c853285258c38d330d1f5
-
-
-
-
+                         
+                               
+                                                                                                                                                                                                                                                                                                                      
+                                                                                                                       
 export const ROWS = [[0,1,2,3,4],[6,7,8,9,10]];
 export const isQuan = (i        ) => i === 5 || i === 11;
 const step = (i        , direction           ) => (i + direction + 12) % 12;

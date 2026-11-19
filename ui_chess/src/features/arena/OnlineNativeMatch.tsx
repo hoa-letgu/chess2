@@ -1,12 +1,16 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import type { ArenaGame } from './game-types';
-import LudoBoard from '@/games/Ludo/LudoBoard';
+import LudoBoard, { LuckyDice } from '@/games/Ludo/LudoBoard';
+import { useLudoReplay } from '@/games/Ludo/useLudoReplay';
 import { legalTokens } from '@/games/Ludo/ludoEngine';
 import type { LudoState } from '@/games/Ludo/ludoEngine';
 import OnlineQuanMatch from '@/games/OAnQuan/OnlineQuanMatch';
 import type { QuanState } from '@/games/OAnQuan/engine';
 import ChemBoard from '@/games/CoChem/ChemBoard';
+import { chemBeats } from '@/games/CoChem/chemMotion';
+import { checkersBeats } from '@/games/Checkers/checkersMotion';
+import { useBeatReplay } from '@/games/shared/useBeatReplay';
 import { legalMoves as chemMoves } from '@/games/CoChem/engine';
 import type { ChemState } from '@/games/CoChem/engine';
 import UpBoard from '@/games/CoUp/UpBoard';
@@ -49,9 +53,9 @@ export default function OnlineNativeMatch({ game, native, seat, canMove, send, p
   let board, controls;
   let logs: string[] = [];
   if (game === 'ludo') {
-    const n = native as LudoState; logs = n.logs;
-    board = <LudoBoard state={n} motion={null} disabled={!canMove} onToken={token => act('token', { token })}/>;
-    controls = <><p>Xúc xắc: <b>{n.lastRoll}</b> · {n.phase === 'choose' ? 'Chọn ngựa có thể đi.' : 'Máy chủ tung xúc xắc cho lượt này.'}</p><button disabled={!canMove || n.phase !== 'roll'} onClick={() => act('roll')}>Tung xúc xắc</button>{legalTokens(n).map(token => <button key={token} disabled={!canMove} onClick={() => act('token', { token })}>Đi ngựa {token + 1}</button>)}</>;
+    logs = (native as LudoState).logs;
+    board = <OnlineLudo state={native as LudoState} canMove={canMove} act={act}/>;
+    controls = null;
   } else if (game === 'oanquan') {
     const n = native as QuanState; logs = n.log;
     board = <OnlineQuanMatch state={n} canMove={canMove} send={send}/>;
@@ -59,7 +63,7 @@ export default function OnlineNativeMatch({ game, native, seat, canMove, send, p
   } else if (game === 'cochem') {
     const n = native as ChemState; logs = n.log;
     const moves = chemMoves(n);
-    board = <ChemBoard state={n} selected={selected} disabled={!canMove} motion={null} hint={null} onPoint={to => { if (selected !== null && moves.some(m => m.from === selected && m.to === to)) act('step', { from: selected, to }); else setSelected(to); }}/>;
+    board = <OnlineChem state={n} selected={selected} canMove={canMove} onPoint={to => { if (selected !== null && moves.some(m => m.from === selected && m.to === to)) act('step', { from: selected, to }); else setSelected(to); }}/>;
     controls = <p>Chọn quân của mình rồi chọn điểm đến. Luật gánh, vây và mở được kiểm tra trên máy chủ.</p>;
   } else if (game === 'coup') {
     const n = native as UpState; logs = n.log;
@@ -74,7 +78,7 @@ export default function OnlineNativeMatch({ game, native, seat, canMove, send, p
   } else if (game === 'checkers') {
     const n = native as CheckersState; logs = n.logs;
     const steps = legalSteps(n), from = n.chain ?? selected;
-    board = <CheckersBoard state={n} selected={from} steps={steps} disabled={!canMove} flip={seat === 1} motion={null} hint={null} onSquare={to => { if (from !== null && steps.some(m => m.from === from && m.to === to)) act('step', { from, to }); else if (steps.some(m => m.from === to)) setSelected(to); }}/>;
+    board = <OnlineCheckers state={n} selected={from} steps={steps} canMove={canMove} flip={seat === 1} onSquare={to => { if (from !== null && steps.some(m => m.from === from && m.to === to)) act('step', { from, to }); else if (steps.some(m => m.from === to)) setSelected(to); }}/>;
     controls = <p>{n.chain !== null ? 'Cần tiếp tục chuỗi bắt bằng quân đang chọn.' : 'Bắt quân là bắt buộc khi có nước bắt. Chọn quân rồi chọn điểm đến.'}</p>;
   } else if (game === 'othello') {
     const n = native as OthelloState; logs = n.logs;
@@ -89,9 +93,28 @@ export default function OnlineNativeMatch({ game, native, seat, canMove, send, p
   return <div className={`online-native offline-arena native-${game}`}><div className="native-board-area">{board}</div>{controls&&<div className="native-actions">{controls}</div>}<section className="native-journal" aria-label="Nhật ký trận đấu"><h3>Diễn biến trận đấu</h3><ol aria-live="polite">{logs.slice(0, 5).map((line, i) => <li key={i}>{line}</li>)}</ol></section></div>;
 }
 
+function OnlineChem({state,selected,canMove,onPoint}:{state:ChemState;selected:number|null;canMove:boolean;onPoint:(i:number)=>void}){
+ const {display,beat,busy}=useBeatReplay(state,chemBeats);
+ return <ChemBoard state={display} selected={selected} disabled={!canMove||busy} beat={beat} hint={null} onPoint={onPoint}/>;
+}
+
+function OnlineCheckers({state,selected,steps,canMove,flip,onSquare}:{state:CheckersState;selected:number|null;steps:ReturnType<typeof legalSteps>;canMove:boolean;flip:boolean;onSquare:(i:number)=>void}){
+ const {display,beat,busy}=useBeatReplay(state,checkersBeats);
+ return <CheckersBoard state={display} selected={selected} steps={steps} disabled={!canMove||busy} flip={flip} beat={beat} hint={null} onSquare={onSquare}/>;
+}
+
+function OnlineLudo({state,canMove,act}:{state:LudoState;canMove:boolean;act:(op:string,extra?:Record<string,unknown>)=>void}){
+ const {display,beat,busy,skip}=useLudoReplay(state),enabled=canMove&&!busy,valid=legalTokens(state),rolling=beat?.kind==='dice';
+ return <><LudoBoard state={display} beat={beat} onSkip={skip} disabled={!enabled} onToken={token=>act('token',{token})}/>
+  <div className="native-actions lk-online"><LuckyDice value={state.lastRoll} rolling={rolling}/><p aria-live="polite">{rolling?'Đang tung…':state.phase==='choose'?`Được ${state.dice} · chọn ngựa đang sáng.`:state.phase==='finished'?'Ván đấu kết thúc.':enabled?'Đến lượt bạn: tung xúc xắc.':'Máy chủ tung xúc xắc cho lượt này.'}</p>
+  <button disabled={!enabled||state.phase!=='roll'} onClick={()=>act('roll')}>{state.phase!=='roll'?'Đã tung':enabled?'Tung xúc xắc':'Chưa đến lượt'}</button>
+  {enabled&&valid.map(token=><button key={token} onClick={()=>act('token',{token})}>Đi ngựa {token+1}</button>)}</div></>;
+}
+
 function OnlineTycoon({state,canMove,send,property,setProperty}:{state:EmpireState;canMove:boolean;send:Props['send'];property:number;setProperty:(n:number)=>void}){
  const {display:n,beat,busy}=useTycoonReplay(state),p=n.players[n.turn],enabled=canMove&&!busy;
  const act=(op:string,extra:Record<string,unknown>={})=>{if(enabled)send({op,...extra});};
     const controls = <><p>Vòng {n.round}/{n.maxRounds} · {p.name}: {money(p.cash)} · Tổng tài sản {money(netWorth(n, p.id))}. Tiền $ trong ván tách biệt với ví xu.</p>{n.phase === 'roll' && <><button disabled={!enabled} onClick={() => act('roll')}>Tung xúc xắc</button>{p.jailed && <button disabled={!enabled || p.cash < 50} onClick={() => act('bail')}>Nộp bảo lãnh $50</button>}</>}{n.phase === 'buy' && <><p>{BOARD[p.position].name}: {money(BOARD[p.position].price)}</p><button disabled={!enabled || p.cash < BOARD[p.position].price} onClick={() => act('buy')}>Mua tài sản</button><button disabled={!enabled} onClick={() => act('pass')}>Bỏ qua mua</button></>}{n.phase === 'manage' && <button disabled={!enabled} onClick={() => act('end')}>Kết thúc lượt</button>}{n.phase === 'debt' && <><p>Nợ {money(n.debt?.amount ?? 0)}. Có thể bán nhà/đất để trả nợ.</p><button disabled={!enabled || p.cash < (n.debt?.amount ?? 0)} onClick={() => act('pay')}>Trả nợ</button><button disabled={!enabled || liquidationValue(n, p.id) >= (n.debt?.amount ?? 0)} onClick={() => act('bankrupt')}>Xác nhận phá sản</button></>}<div className="native-property"><strong>{BOARD[property].name}</strong><button disabled={!enabled || !canBuild(n, property)} onClick={() => act('build', { tile: property })}>Xây nhà</button><button disabled={!enabled || !canDowngrade(n, property)} onClick={() => act('downgrade', { tile: property })}>Bán nhà</button><button disabled={!enabled || !canSell(n, property)} onClick={() => act('sell', { tile: property })}>Bán đất</button></div></>;
  return <><EmpireBoard state={n} beat={beat} onRoll={()=>act('roll')} onAction={action=>{if(action.type!=='roll')act(action.type,'tile' in action?{tile:action.tile}:{});}} canAct={enabled} canRoll={enabled&&n.phase==='roll'} travel={null} selected={property} onSelect={setProperty} faces={n.dice} rolling={beat?.kind==='dice'}/><div className="native-actions">{controls}</div></>;
 }
+

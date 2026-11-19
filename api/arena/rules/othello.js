@@ -1,4 +1,4 @@
-// Generated from Othello/engine.ts. SHA256: bd946b2ddaec8efb439afb021e47d7d23c21ce93d470d1fcfbb62553ff2401b3
+// Generated from Othello/engine.ts. SHA256: ada9040b50ccb1cb06d4a5e8533fd6fb14cd353e367f7abc62ea705e7700fff4
                          
                                
                                                      
