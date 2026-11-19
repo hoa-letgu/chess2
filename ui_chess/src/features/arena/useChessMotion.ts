@@ -31,7 +31,7 @@ export function useChessMotion(position: string, flipped: boolean) {
     previous.current = position;
     const host = stage.current;
     const moves = readMoves(before, position);
-    if (!host || !moves.length) return;
+    if (!host || !moves.length || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const cell = host.clientWidth / 8;
     const point = (i: number) => {
@@ -49,13 +49,18 @@ export function useChessMotion(position: string, flipped: boolean) {
       Object.assign(node.style, {position:'absolute', pointerEvents:'none', objectFit:'contain', boxSizing:'border-box',
         width:size*cell+'px', height:size*cell+'px', left:x+(1-size)*cell/2+'px', top:y+(1-size)*cell/2+'px', zIndex:String(z)});
       node.setAttribute('aria-hidden','true');
+      node.dataset.chessMotion='true';
       host!.appendChild(node);
       layers.push(node);
       return node;
     }
+    const timers:number[]=[];
     function play(node: HTMLElement, frames: Keyframe[], duration: number, delay = 0, remove = true) {
       const animation = node.animate(frames, {duration, delay, fill:'both', easing:'linear'});
-      animation.onfinish = () => { if (remove) node.remove(); animation.cancel(); };
+      const finish=()=>{if(remove)node.remove();animation.cancel();};
+      animation.onfinish=finish;
+      // A second cleanup path also handles delayed finish events after a busy frame.
+      timers.push(window.setTimeout(finish,duration+delay+80));
       animations.push(animation);
     }
     function halo(to: number, color: string, duration: number, delay: number) {
@@ -70,7 +75,7 @@ export function useChessMotion(position: string, flipped: boolean) {
       const [sx,sy]=point(from), [tx,ty]=point(to);
       const dx=tx-sx, dy=ty-sy, direction=dx>=0?1:-1;
       const promotion=kind==='p' && position[to]!==piece;
-      const mover=layer(from,250,.8,piece);
+      const mover=layer(from,250,.98,piece);
       const travel=(t:number) => t*t*(3-2*t);
       const frames=Array.from({length:33},(_,i)=>{
         const t=i/32, arc=Math.sin(Math.PI*t), u=travel(t);
@@ -80,13 +85,13 @@ export function useChessMotion(position: string, flipped: boolean) {
         if(kind==='k') y-=cell*.13*arc;
         if(kind==='q') opacity=1-.97*Math.min(1,arc*1.6);
         if(kind==='r' && t>.75){const jolt=Math.sin((t-.75)*Math.PI*12)*(1-t)*.16; x+=Math.sign(dx)*cell*jolt; y+=Math.sign(dy)*cell*jolt;}
-        if(promotion && t>.7) opacity=(1-t)/.3;
+        if(promotion && t>.7) opacity=Math.max(0,Math.min(1,(1-t)/.3));
         return {offset:t,opacity,transform:`translate(${x}px,${y}px) rotate(${rotation}deg) scale(${scale})`,
           filter:promotion?`drop-shadow(0 0 ${t*t*12}px gold)`:'none'};
       });
       play(mover,frames,duration);
       play(landed,promotion?[{opacity:0},{opacity:0,offset:.7},{opacity:1,filter:'brightness(1.35)'}]:[{opacity:0},{opacity:0}],duration,0,false);
-      if(victim!==undefined) play(layer(victim,240,.8,before[victim]),[{opacity:1,transform:'scale(1)'},{opacity:.8,transform:'scale(.6)',offset:.55},{opacity:0,transform:'scale(.02)'}],380,Math.round(duration*.42));
+      if(victim!==undefined) play(layer(victim,240,.98,before[victim]),[{opacity:1,transform:'scale(1)'},{opacity:.8,transform:'scale(.6)',offset:.55},{opacity:0,transform:'scale(.02)'}],380,Math.round(duration*.42));
       if(kind==='k'||kind==='r'||kind==='q'||promotion) halo(to,kind==='q'?'#d6a2ff':'#ffe39a',duration*.28,duration*.72);
       if(kind==='q'||kind==='b'){
         const queen=kind==='q', count=queen?14:8;
@@ -103,7 +108,7 @@ export function useChessMotion(position: string, flipped: boolean) {
         }
       }
     }
-    return ()=>{animations.forEach(animation=>animation.cancel());layers.forEach(node=>node.remove());};
+    return ()=>{timers.forEach(timer=>window.clearTimeout(timer));animations.forEach(animation=>animation.cancel());layers.forEach(node=>node.remove());};
   },[position,flipped]);
   return stage;
 }

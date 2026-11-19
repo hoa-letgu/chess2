@@ -1,0 +1,5 @@
+# Othello Magic Flip
+
+Shared offline/online replay validates the next board with canonical playMove. Drop 220ms; flips 280ms with first delay 180ms and successive distance delays 60ms (parallel in all captured directions). Score held until the final disc completes, then 300ms score bounce. Victory sequence 1500ms, row glow, trophy and pastel stars. Combo badge starts at five captured discs; eight or more show COMBO ×N. Mint board, chibi faces, legal pulse 1400ms, preview rims, leader crown, opt-in synthesized pop sound. Reduced-motion skips replay. Room component remains mounted across versions.
+
+Verified 2026-11-19: 15 rule tests + 3 replay tests passed; ESLint touched Othello files passed. Offline entered from lobby, C4 preview and mid-flip 280ms/180ms inspected. Two isolated browser sessions in free room: C4 and C3, incoming flips in both directions; both settled at 4–1 after first move. Mobile 393px no horizontal overflow. Model tests cover finish ordering and 60ms directional distances; large combo and full final celebration not exercised in a live full online game. Vite packaging passed; pre-existing global TypeScript errors remain elsewhere.

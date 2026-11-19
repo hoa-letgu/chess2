@@ -1,7 +1,7 @@
 // src/games/chess/hooks/useChessBot.ts
 import { useEffect, useRef } from "react";
 import { Chess } from "chess.js";
-import { createEngineCache, findBestMoveTS } from "@/games/chess/utils/tsEngine";
+import { createEngineCache } from "@/games/chess/utils/tsEngine";
 
 const isInCheck = (g: any) => (g.isCheck?.() ?? g.inCheck?.() ?? false);
 
@@ -50,6 +50,8 @@ export function useChessBot({
   setBotInfo,
 }: UseChessBotArgs) {
 
+  const generation=useRef(0);
+  const workerRef=useRef<Worker|null>(null);
   const tRef = useRef<number | null>(null);
 
   // khóa chống chạy lặp
@@ -95,6 +97,7 @@ export function useChessBot({
 
 
   useEffect(() => {
+    const requestGeneration=++generation.current;
     if (tRef.current) {
       window.clearTimeout(tRef.current);
       tRef.current = null;
@@ -119,7 +122,7 @@ export function useChessBot({
     thinkingRef.current = true;
     setBotThinking(true);
 
-    tRef.current = window.setTimeout(() => {
+    tRef.current = window.setTimeout(async () => {
       tRef.current = null;
 
       const latest = latestRef.current;
@@ -151,15 +154,18 @@ export function useChessBot({
 
 
 
-		const result = findBestMoveTS(clone, {
-		  maxDepth: depth,
-		  timeLimitMs,
-		  cache: cacheRef.current,
-		});
-
-
-
-
+        const result = await new Promise<any>(resolve=>{
+          let settled=false;let activeWorker:Worker|null=null;
+          const finish=(value:any)=>{if(settled)return;settled=true;window.clearTimeout(deadline);activeWorker?.terminate();if(workerRef.current===activeWorker)workerRef.current=null;resolve(value);};
+          const fallback=()=>({move:clone.moves({verbose:true})[0],depthReached:0,timeMs:0});
+          const deadline=window.setTimeout(()=>finish(fallback()),timeLimitMs+1500);
+          try{
+            const worker=new Worker(new URL('./chess-bot.worker.ts',import.meta.url),{type:'module'});activeWorker=worker;workerRef.current=worker;
+            worker.onmessage=event=>finish(event.data.result??fallback());worker.onerror=()=>finish(fallback());
+            worker.postMessage({fen:latest.fen,depth,timeLimitMs});
+          }catch{finish(fallback());}
+        });
+        if(generation.current!==requestGeneration||latestRef.current.fen!==fen||latestRef.current.botPaused||isUndoingRef?.current)return;
       const best = result.move;
       if (!best) {
         thinkingRef.current = false;
@@ -230,6 +236,7 @@ export function useChessBot({
     }, 150);
 
     return () => {
+      generation.current++;workerRef.current?.terminate();workerRef.current=null;thinkingRef.current=false;
       if (tRef.current) {
         window.clearTimeout(tRef.current);
         tRef.current = null;

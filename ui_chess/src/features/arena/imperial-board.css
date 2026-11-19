@@ -157,7 +157,7 @@
 .imperial-stone.stone-black { background: radial-gradient(circle at 32% 25%, #737779 0%, #303739 29%, #121718 66%, #080c0d 100%); border: 1px solid #0b0e10; }
 .imperial-stone.stone-white { background: radial-gradient(circle at 32% 25%, #fffefa, #f0ece0 45%, #c9c6bd 80%, #a39f94); border: 1px solid #bcb7a7; }
 .imperial-gomoku-piece { position: absolute; inset: 8%; width: 84%; height: 84%; fill: none; stroke: currentColor; stroke-width: 10; stroke-linecap: round; pointer-events: none; filter: drop-shadow(0 1px 0 #fff8); }
-.imperial-chess-piece { position: absolute; inset: 8%; width: 84%; height: 84%; object-fit: contain; pointer-events: none; user-select: none; }
+.imperial-chess-piece { position: absolute; inset: 1%; width: 98%; height: 98%; object-fit: contain; pointer-events: none; user-select: none; }
 .imperial-table.imperial-chess .imperial-cell { background: #e6d8b5; }
 .imperial-table.imperial-chess .imperial-cell.cell-dark { background: #748a74; }
 .imperial-board-caption { display: flex; align-items: center; justify-content: center; gap: 15px; padding-top: 15px; font-size: 10px; letter-spacing: 1px; color: #b69a6b; }

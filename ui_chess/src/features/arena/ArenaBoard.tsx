@@ -138,6 +138,6 @@ function pieceLabel(game: Game, p: string | null) {
 function BoardPiece({ game, piece }: { game: Game; piece: string }) {
   if (game === 'go') return <span className={`imperial-stone stone-${piece}`} data-piece={piece} />;
   if (game === 'gomoku') return <svg className={`imperial-gomoku-piece caro-mark-${piece.toLowerCase()}`} viewBox="0 0 100 100" aria-hidden="true" focusable="false">{piece==='X'?<><path className="caro-ink" d="M25 23C40 32 62 59 77 77"/><path className="caro-ink caro-x-second" d="M76 24C62 37 37 61 23 79"/><path className="caro-ink-glint" d="M27 21Q40 29 46 38M72 24L57 39"/></>:<><path className="caro-ink" d="M77 31C68 16 44 15 29 28C12 43 16 70 33 80C50 91 75 81 81 63C85 51 80 39 76 34"/><path className="caro-ink-glint" d="M38 23Q55 17 68 25"/></>}</svg>;
-  if (game === 'chess') return <img className="imperial-chess-piece" src={`/chess/${piece === piece.toUpperCase() ? 'w' : 'b'}${piece.toLowerCase()}.png`} alt="" draggable={false} />;
+  if (game === 'chess') return <img className="imperial-chess-piece" src={`/chess/imperial-dragon/${piece===piece.toUpperCase()?'w':'b'}${piece.toLowerCase()}.png`} alt="" draggable={false}/>;
   return <span className={`imperial-xiangqi-piece ${piece === piece.toUpperCase() ? 'army-red' : 'army-black'}`} data-piece={piece}><span>{xiangqiSymbols[piece]}</span></span>;
 }

@@ -1,19 +1,19 @@
 export type PieceKey = "P" | "N" | "B" | "R" | "Q" | "K" | "p" | "n" | "b" | "r" | "q" | "k";
 
 export const PIECE_IMG: Record<PieceKey, string> = {
-  P: "chess/wp.png",
-  N: "chess/wn.png",
-  B: "chess/wb.png",
-  R: "chess/wr.png",
-  Q: "chess/wq.png",
-  K: "chess/wk.png",
+  P: "chess/imperial-dragon/wp.png",
+  N: "chess/imperial-dragon/wn.png",
+  B: "chess/imperial-dragon/wb.png",
+  R: "chess/imperial-dragon/wr.png",
+  Q: "chess/imperial-dragon/wq.png",
+  K: "chess/imperial-dragon/wk.png",
 
-  p: "chess/bp.png",
-  n: "chess/bn.png",
-  b: "chess/bb.png",
-  r: "chess/br.png",
-  q: "chess/bq.png",
-  k: "chess/bk.png",
+  p: "chess/imperial-dragon/bp.png",
+  n: "chess/imperial-dragon/bn.png",
+  b: "chess/imperial-dragon/bb.png",
+  r: "chess/imperial-dragon/br.png",
+  q: "chess/imperial-dragon/bq.png",
+  k: "chess/imperial-dragon/bk.png",
 };
 
 export function isPieceKey(x: any): x is PieceKey {

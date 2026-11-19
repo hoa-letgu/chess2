@@ -31,7 +31,7 @@ export function PromotionPopup({ open, color, onSelect }: PromotionPopupProps) {
                 onClick={() => onSelect(p)}
                 className="hover:scale-110 transition-transform"
               >
-                <img src={PIECE_IMG[imgKey]} className="w-16 h-16" />
+                <img src={'/'+PIECE_IMG[imgKey as keyof typeof PIECE_IMG]} className="w-16 h-16" />
               </button>
             );
           })}

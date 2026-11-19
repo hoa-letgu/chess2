@@ -28,7 +28,8 @@ import CheckersBoard from '@/games/Checkers/CheckersBoard';
 import { legalSteps } from '@/games/Checkers/engine';
 import type { CheckersState } from '@/games/Checkers/engine';
 import OthelloBoard from '@/games/Othello/OthelloBoard';
-import { legalMoves as othelloMoves, counts } from '@/games/Othello/engine';
+import { othelloBeats } from '@/games/Othello/othelloMotion';
+import { legalMoves as othelloMoves } from '@/games/Othello/engine';
 import type { OthelloState } from '@/games/Othello/engine';
 import '@/games/Ludo/ludo.css';
 import '@/games/OAnQuan/quan.css';
@@ -82,9 +83,9 @@ export default function OnlineNativeMatch({ game, native, seat, canMove, send, p
     controls = <p>{n.chain !== null ? 'Cần tiếp tục chuỗi bắt bằng quân đang chọn.' : 'Bắt quân là bắt buộc khi có nước bắt. Chọn quân rồi chọn điểm đến.'}</p>;
   } else if (game === 'othello') {
     const n = native as OthelloState; logs = n.logs;
-    const moves = othelloMoves(n.board, n.turn), score = counts(n.board);
-    board = <OthelloBoard state={n} moves={moves} disabled={!canMove} flip={seat === 1} motion={null} preview={moves.find(m => m.at === hover) ?? null} hint={null} onPlace={to => act('place', { to })} onPreview={setHover}/>;
-    controls = <p>Đen {score[0]} – Trắng {score[1]}.{n.passed !== null ? ' Bên hết nước tự nhường lượt.' : ' Đặt vào ô sáng để lật quân.'}</p>;
+    const moves = othelloMoves(n.board, n.turn);
+    board = <OnlineOthello state={n} moves={moves} disabled={!canMove} flip={seat === 1} motion={null} preview={moves.find(m => m.at === hover) ?? null} hint={null} onPlace={to => act('place', { to })} onPreview={setHover}/>;
+    controls = <p>{n.passed !== null ? ' Bên hết nước tự nhường lượt.' : ' Đặt vào ô sáng để lật quân.'}</p>;
   } else if (game === 'tycoon') {
     logs = (native as EmpireState).logs;
     board = <OnlineTycoon state={native as EmpireState} canMove={canMove} send={send} property={property} setProperty={setProperty}/>;
@@ -118,3 +119,8 @@ function OnlineTycoon({state,canMove,send,property,setProperty}:{state:EmpireSta
  return <><EmpireBoard state={n} beat={beat} onRoll={()=>act('roll')} onAction={action=>{if(action.type!=='roll')act(action.type,'tile' in action?{tile:action.tile}:{});}} canAct={enabled} canRoll={enabled&&n.phase==='roll'} travel={null} selected={property} onSelect={setProperty} faces={n.dice} rolling={beat?.kind==='dice'}/><div className="native-actions">{controls}</div></>;
 }
 
+
+function OnlineOthello(props:Parameters<typeof OthelloBoard>[0]){
+ const {display,beat,busy}=useBeatReplay(props.state,othelloBeats);
+ return <OthelloBoard {...props} state={display} disabled={props.disabled||busy} motion={beat?.motion??null} phase={beat?.kind}/>;
+}

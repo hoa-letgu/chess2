@@ -12,7 +12,7 @@ export function chemBeats(before: ChemState, after: ChemState): ChemBeat[] {
   const actor = before.turn, enemy = (1 - actor) as Side, { from, to } = after.last, out: ChemBeat[] = [];
   const revert = (cells: number[]): ChemState => { const board = [...after.board]; for (const i of cells) board[i] = enemy; return { ...after, board }; };
   out.push({ kind: 'dash', state: before, side: actor, from, to, duration: 250 });
-  if (after.ganh.length) out.push({ kind: 'ganh', state: revert([...after.ganh, ...after.vay]), side: actor, from: to, to, targets: after.ganh, duration: 380 });
+  if (after.ganh.length) out.push({ kind: 'ganh', state: revert([...after.ganh, ...after.vay]), side: actor, from: to, to, targets: after.ganh, duration: 520 });
   if (after.vay.length) {
     const ring = [...new Set(after.vay.flatMap(i => neighbors(i)))].filter(i => after.board[i] === actor && !after.vay.includes(i));
     out.push({ kind: 'vay', state: revert(after.vay), side: actor, targets: after.vay, ring, duration: 600 });

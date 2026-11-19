@@ -18,3 +18,12 @@ test('plain move is just a dash', () => {
   const s = newChemGame(false), after = applyChemMove(s, { from: 15, to: 16 });
   assert.deepEqual(chemBeats(s, after).map(b => b.kind), ['dash']);
 });
+
+test('vay, trap and victory preserve conversion rules and requested timings',()=>{
+ let s=newChemGame();s.board=Array(25).fill(null);for(const i of [2,5,7])s.board[i]=0;for(const i of [0,1,24])s.board[i]=1;
+ let n=applyChemMove(s,{from:7,to:6}),beats=chemBeats(s,n),v=beats.find(b=>b.kind==='vay');assert.equal(v.duration,600);assert.deepEqual(v.targets,[0,1]);assert.equal(v.state.board[0],1);assert.equal(n.board[0],0);
+ s=newChemGame();s.board=Array(25).fill(null);for(const i of [11,12,13])s.board[i]=0;for(const i of [17,24])s.board[i]=1;
+ n=applyChemMove(s,{from:12,to:7});assert.equal(chemBeats(s,n).at(-1).kind,'trap');
+ s=newChemGame(false);s.board=Array(25).fill(null);s.board[7]=0;s.board[11]=1;s.board[13]=1;
+ n=applyChemMove(s,{from:7,to:12});beats=chemBeats(s,n);assert.deepEqual(beats.map(b=>b.duration),[250,520,1200]);assert.equal(n.board.filter(x=>x!==null).length,3);
+});

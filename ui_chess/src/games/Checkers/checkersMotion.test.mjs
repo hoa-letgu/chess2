@@ -20,3 +20,11 @@ test('slide, jump with combo count, and crown beats', () => {
   assert.deepEqual(checkersBeats(s, n).map(b => b.kind), ['slide', 'crown']);
   assert.deepEqual(checkersBeats(n, n), []);
 });
+
+test('combo chains once per confirmed capture and skips missed snapshots',()=>{
+ const s=blank();s.board[42]={side:0,king:false};for(const i of [35,19,7])s.board[i]={side:1,king:false};
+ const n=applyStep(s,42,28),end=applyStep(n,28,10);
+ assert.equal(checkersBeats(s,n)[0].combo,1);assert.equal(checkersBeats(n,end)[0].combo,2);
+ assert.deepEqual(checkersBeats(s,end),[]);assert.deepEqual(checkersBeats(end,n),[]);
+ assert.deepEqual(checkersBeats(s,{...n,ply:9}),[]);
+});

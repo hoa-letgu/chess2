@@ -1,8 +1,8 @@
 /* Cờ Đam · Jump & Crown effects. */
 .ck-board-frame .ck-board-grid .ck-moving{position:absolute;width:12.5%;height:12.5%;padding:1.1%;box-sizing:border-box;z-index:7;pointer-events:none;transition:none;transform:none}
-.ck-board-frame .ck-moving>.ck-disc{inset:1.1%}
+.ck-board-frame .ck-moving>.ck-disc{inset:11%}
 .ck-board-frame .ck-moving.fx-slide{animation:ck-slide var(--dur,250ms) ease-in-out both}
-.ck-board-frame .ck-moving.fx-jump{animation:ck-jump var(--dur,420ms) cubic-bezier(.3,.6,.4,1) both}
+.ck-board-frame .ck-moving.fx-jump{animation:ck-ground-path var(--dur,420ms) linear both}
 .ck-board-frame .ck-moving .ck-shadow{position:absolute;left:18%;right:18%;bottom:4%;height:16%;border-radius:50%;background:#0006;filter:blur(3px)}
 .ck-board-frame .ck-moving.fx-royal{filter:drop-shadow(0 0 10px #ffd66b)}
 @keyframes ck-slide{0%{transform:translate(var(--dx),var(--dy)) translateY(-8%) rotate(0)}50%{transform:translate(calc(var(--dx)/2),calc(var(--dy)/2)) translateY(-14%) rotate(8deg)}100%{transform:translate(0,0) rotate(0)}}
@@ -10,14 +10,23 @@
 .ck-board-frame .ck-square.being-taken .ck-disc{opacity:1;animation:ck-taken .42s ease-in forwards}
 @keyframes ck-taken{0%{transform:translateX(0)}15%{transform:translateX(-4px)}30%{transform:translateX(4px)}45%{transform:translateX(0);opacity:1}100%{transform:scale(.3);opacity:0}}
 .ck-board-frame .ck-poof{position:absolute;inset:0;pointer-events:none;z-index:6}
-.ck-board-frame .ck-poof i{position:absolute;left:50%;top:50%;font-style:normal;font-size:clamp(9px,2.2cqw,18px);color:#ffe08a;text-shadow:0 0 6px #fff;opacity:0;animation:ck-spark .45s ease-out .2s forwards}
+.ck-board-frame .ck-poof i{position:absolute;left:50%;top:50%;font-style:normal;font-size:clamp(9px,2.2cqw,18px);color:#ffe08a;text-shadow:0 0 6px #fff;opacity:0;animation:ck-spark .22s ease-out .2s forwards}
 @keyframes ck-spark{0%{opacity:1;transform:rotate(var(--a)) translateY(0)}100%{opacity:0;transform:rotate(var(--a)) translateY(-150%) scale(.4)}}
-.ck-board-frame .ck-combo{position:absolute;width:25%;margin-left:-6.25%;margin-top:-5%;z-index:9;text-align:center;font-weight:900;font-size:clamp(11px,2.8cqw,22px);color:#fff;-webkit-text-stroke:3px #c2392b;paint-order:stroke fill;text-shadow:0 2px 0 #7a1f17;pointer-events:none;animation:ck-pop .6s ease-out both}
+.ck-board-frame .ck-combo{position:absolute;width:25%;margin-left:-6.25%;margin-top:-5%;z-index:9;text-align:center;font-weight:900;font-size:clamp(11px,2.8cqw,22px);color:#fff;-webkit-text-stroke:3px #c2392b;paint-order:stroke fill;text-shadow:0 2px 0 #7a1f17;pointer-events:none;animation:ck-pop .42s ease-out both}
 @keyframes ck-pop{0%{transform:scale(.3);opacity:0}30%{transform:scale(1.35);opacity:1}100%{transform:translateY(-35%) scale(1);opacity:0}}
 .ck-board-frame .ck-square.just-crowned .ck-disc{animation:ck-spin-glow .75s ease-out both}
-@keyframes ck-spin-glow{0%{transform:rotateY(0) scale(.9);filter:brightness(1.8) drop-shadow(0 0 14px #ffd66b)}60%{transform:rotateY(360deg) scale(1.15)}100%{transform:none;filter:none}}
+@keyframes ck-spin-glow{0%{transform:rotate(-8deg) scale(.9);filter:brightness(1.8) drop-shadow(0 0 14px #ffd66b)}60%{transform:rotate(8deg) translateY(-8%) scale(1.1)}100%{transform:none;filter:none}}
 .ck-board-frame .ck-crown-drop{position:absolute;width:12.5%;height:12.5%;z-index:9;display:grid;place-items:center;pointer-events:none;color:#ffcf3a;filter:drop-shadow(0 0 8px #fff2);animation:ck-crown-fall .75s cubic-bezier(.3,1.4,.5,1) both}
 .ck-board-frame .ck-crown-drop svg{width:60%;height:60%;fill:#ffcf3a;stroke:#8a5a00}
 @keyframes ck-crown-fall{0%{transform:translateY(-260%) scale(.6);opacity:0}45%{opacity:1}70%{transform:translateY(-14%)}100%{transform:translateY(0);opacity:0}}
 .ck-board-frame .ck-square.royal .ck-disc.is-king{box-shadow:0 0 0 2px #ffd66b88,0 0 14px #ffd66b66}
 @media(prefers-reduced-motion:reduce){.ck-board-frame *{animation:none!important}}
+
+/* Keep ground shadow on the board while the piece rises on its own arc. */
+.ck-board-frame .ck-flight-body{position:absolute;inset:0;display:block;pointer-events:none}.ck-board-frame .ck-flight-body>.ck-disc{inset:11%}.ck-board-frame .fx-jump .ck-flight-body{animation:ck-height var(--dur,420ms) linear both}.ck-board-frame .fx-jump .ck-shadow{animation:ck-ground-shadow var(--dur,420ms) linear both}.ck-board-frame .fx-royal:before{content:'';position:absolute;inset:32% 4%;border-radius:50%;background:#ffe7a755;filter:blur(6px);animation:ck-royal-trail var(--dur,320ms) ease-out both}.ck-board-frame .ck-disc.is-king:after{content:'';position:absolute;inset:3%;border-radius:50%;border:2px solid #ffe9a7;transform:translateY(5px);box-shadow:0 3px 0 #b28b52;z-index:-1}.ck-board-frame .ck-promotion-star{position:absolute;left:50%;top:50%;font-style:normal;color:#ffe99a;font-size:18px;animation:ck-promotion-stars .75s ease-out both}
+@keyframes ck-ground-path{0%{transform:translate(var(--dx),var(--dy))}100%{transform:translate(0,0)}}
+@keyframes ck-height{0%,100%{transform:translateY(0) scale(1)}25%,75%{transform:translateY(-41%) scale(1.1)}50%{transform:translateY(-55%) scale(1.16)}}
+@keyframes ck-ground-shadow{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(.65);opacity:.2}}
+@keyframes ck-royal-trail{0%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.2)}40%{opacity:.7}100%{opacity:0;transform:translate(0,0) scale(.4)}}
+@keyframes ck-promotion-stars{0%,35%{opacity:0;transform:rotate(var(--a)) translateY(0) scale(.3)}55%{opacity:1}100%{opacity:0;transform:rotate(var(--a)) translateY(-60px) scale(.6)}}
+@media(prefers-reduced-motion:reduce){.ck-board-frame *{animation:none!important;transition:none!important}}

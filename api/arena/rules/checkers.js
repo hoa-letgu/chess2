@@ -1,4 +1,4 @@
-// Generated from Checkers/engine.ts. SHA256: cfc72cabb3d2a2900ea7de1f9f57cc8646a8b7136cd5a363e915511bc8968467
+// Generated from Checkers/engine.ts. SHA256: 87b9f4ee6fa671d47091380efe94ff625874c0a6e62229fb2b7dbeeda8812ff6
                          
                                                   
                                                                                      

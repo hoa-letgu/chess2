@@ -68,7 +68,7 @@ type Props = {
 };
 
 const MOVE_MS = 450;
-const PIECE_SCALE = 0.8;
+const PIECE_SCALE = 0.98;
 const PIECE_INSET = (1 - PIECE_SCALE) / 2;
 
 const easeInOutCubic = (t: number) =>
@@ -395,8 +395,8 @@ export function ChessBoard({
             <img
               src={PIECE_IMG[pieceKey]}
               style={{
-                width: "80%",
-                height: "80%",
+                width: "98%",
+                height: "98%",
                 pointerEvents: "none",
                 ...(isDeadKing ? { transform: "rotate(90deg)", opacity: 0.9 } : {}),
               }}

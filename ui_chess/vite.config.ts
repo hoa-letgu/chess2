@@ -13,7 +13,7 @@ export default defineConfig({
     },
   },
   server: {
-    host: "10.30.21.75", // hoặc true để mở tất cả địa chỉ mạng
+    host: "192.168.1.8", // hoặc true để mở tất cả địa chỉ mạng
     port: 5173,           // tuỳ chỉnh nếu muốn
     proxy: {
       "/api/arena": { target: arenaTarget, changeOrigin: false },
