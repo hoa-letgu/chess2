@@ -1,19 +1,19 @@
 export type PieceKey = "P" | "N" | "B" | "R" | "Q" | "K" | "p" | "n" | "b" | "r" | "q" | "k";
 
 export const PIECE_IMG: Record<PieceKey, string> = {
-  P: "chess/imperial-dragon/wp.png",
-  N: "chess/imperial-dragon/wn.png",
-  B: "chess/imperial-dragon/wb.png",
-  R: "chess/imperial-dragon/wr.png",
-  Q: "chess/imperial-dragon/wq.png",
-  K: "chess/imperial-dragon/wk.png",
+  P: "chess/monochrome-armor/wp.png",
+  N: "chess/monochrome-armor/wn.png",
+  B: "chess/monochrome-armor/wb.png",
+  R: "chess/monochrome-armor/wr.png",
+  Q: "chess/monochrome-armor/wq.png",
+  K: "chess/monochrome-armor/wk.png",
 
-  p: "chess/imperial-dragon/bp.png",
-  n: "chess/imperial-dragon/bn.png",
-  b: "chess/imperial-dragon/bb.png",
-  r: "chess/imperial-dragon/br.png",
-  q: "chess/imperial-dragon/bq.png",
-  k: "chess/imperial-dragon/bk.png",
+  p: "chess/monochrome-armor/bp.png",
+  n: "chess/monochrome-armor/bn.png",
+  b: "chess/monochrome-armor/bb.png",
+  r: "chess/monochrome-armor/br.png",
+  q: "chess/monochrome-armor/bq.png",
+  k: "chess/monochrome-armor/bk.png",
 };
 
 export function isPieceKey(x: any): x is PieceKey {
